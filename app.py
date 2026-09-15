@@ -637,30 +637,6 @@ elif tool == "Ramp Transactions Exporter":
 
     st.write("Export card transactions currently marked Ready to Export in Ramp.")
 
-    if st.button("TEST Ramp Sync Endpoint"):
-
-        try:
-
-            access_token = get_ramp_access_token(
-                st.secrets["RAMP_CLIENT_ID"],
-                st.secrets["RAMP_CLIENT_SECRET"],
-            )
-
-            fake_transaction = [{"id": "11111111-1111-1111-1111-111111111111"}]
-
-            result = mark_transactions_exported(
-                access_token,
-                fake_transaction,
-            )
-
-            st.success("Ramp accepted the request.")
-            st.json(result)
-
-        except Exception as e:
-
-            st.error("Ramp rejected the request.")
-            st.code(str(e))
-
     # ============================================================
     # LOAD READY TRANSACTIONS
     # ============================================================
