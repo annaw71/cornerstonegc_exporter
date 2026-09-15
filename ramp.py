@@ -71,7 +71,7 @@ def mark_transactions_exported(access_token, transactions):
         successful_syncs.append(
             {
                 "id": transaction_id,
-                "reference_id": f"SAGE-MANUAL-{transaction_id}",
+                "reference_id": f"SAGE-{transaction_id}",
             }
         )
 

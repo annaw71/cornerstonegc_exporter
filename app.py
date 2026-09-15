@@ -637,6 +637,27 @@ elif tool == "Ramp Transactions Exporter":
 
     st.write("Export card transactions currently marked Ready to Export in Ramp.")
 
+    if st.button("Test Ramp Accounting Connection"):
+
+        try:
+
+            access_token = get_ramp_access_token(
+                st.secrets["RAMP_CLIENT_ID"],
+                st.secrets["RAMP_CLIENT_SECRET"],
+            )
+
+            connection = get_accounting_connection(access_token)
+
+            st.success("Ramp accounting connection found.")
+
+            st.json(connection)
+
+        except Exception as e:
+
+            st.error("Could not load the Ramp accounting connection.")
+
+            st.code(str(e))
+
     # ============================================================
     # LOAD READY TRANSACTIONS
     # ============================================================
@@ -816,6 +837,64 @@ elif tool == "Ramp Transactions Exporter":
                 4. Save them in Sage
                 5. Once saved, mark the transactions as exported in Ramp
                 """)
+
+            # ====================================================
+            # MARK TRANSACTIONS EXPORTED IN RAMP
+            # ====================================================
+
+            st.divider()
+
+            st.subheader("Finish Export")
+
+            st.warning(
+                "Only mark these transactions as exported AFTER "
+                "you have pasted them into Sage and successfully saved them."
+            )
+
+            confirm_export = st.checkbox(
+                "I have successfully entered and saved these transactions in Sage."
+            )
+
+            if st.button(
+                "Mark Transactions Exported in Ramp",
+                type="primary",
+                disabled=not confirm_export,
+            ):
+
+                try:
+
+                    # Get a fresh token in case the original token expired
+                    access_token = get_ramp_access_token(
+                        st.secrets["RAMP_CLIENT_ID"],
+                        st.secrets["RAMP_CLIENT_SECRET"],
+                    )
+
+                    result = mark_transactions_exported(
+                        access_token,
+                        transactions,
+                    )
+
+                    st.success(
+                        f"{len(transactions)} transaction"
+                        f"{'s' if len(transactions) != 1 else ''} "
+                        "marked as exported in Ramp."
+                    )
+
+                    # Clear the old transactions
+                    st.session_state.pop("ramp_transactions", None)
+                    st.session_state.pop("ramp_df", None)
+                    st.session_state.pop("ramp_access_token", None)
+
+                    st.rerun()
+
+                except Exception as e:
+
+                    st.error(
+                        "The transactions were entered into Sage, "
+                        "but Ramp could not mark them as exported."
+                    )
+
+                    st.code(str(e))
 
             # ====================================================
             # CSV DOWNLOAD
