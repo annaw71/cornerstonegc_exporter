@@ -637,7 +637,7 @@ elif tool == "Ramp Transactions Exporter":
 
     st.write("Export card transactions currently marked Ready to Export in Ramp.")
 
-    if st.button("Test Ramp Accounting Connection"):
+    if st.button("TEST Ramp Sync Endpoint"):
 
         try:
 
@@ -646,16 +646,19 @@ elif tool == "Ramp Transactions Exporter":
                 st.secrets["RAMP_CLIENT_SECRET"],
             )
 
-            connection = get_accounting_connection(access_token)
+            fake_transaction = [{"id": "11111111-1111-1111-1111-111111111111"}]
 
-            st.success("Ramp accounting connection found.")
+            result = mark_transactions_exported(
+                access_token,
+                fake_transaction,
+            )
 
-            st.json(connection)
+            st.success("Ramp accepted the request.")
+            st.json(result)
 
         except Exception as e:
 
-            st.error("Could not load the Ramp accounting connection.")
-
+            st.error("Ramp rejected the request.")
             st.code(str(e))
 
     # ============================================================
