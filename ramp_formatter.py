@@ -72,6 +72,15 @@ def format_ramp_transactions(transactions):
             if posted_date:
                 posted_date = pd.to_datetime(posted_date).strftime("%m/%d/%Y")
 
+            account = None
+
+            if gl_account["code"] and gl_account["name"]:
+                account = f'{gl_account["code"]} - {gl_account["name"]}'
+            elif gl_account["code"]:
+                account = gl_account["code"]
+            elif gl_account["name"]:
+                account = gl_account["name"]
+
             rows.append(
                 {
                     "Credit Card": "1 - Ramp",
@@ -83,7 +92,7 @@ def format_ramp_transactions(transactions):
                     "Credit Amount": credit,
                     "Posted Date": posted_date,
                     "Notes": transaction.get("memo"),
-                    "Account": gl_account["code"] + " - " + gl_account["name"],
+                    "Account": account,
                     "Subaccount": None,
                     "Job": None,
                     "Phase": None,
