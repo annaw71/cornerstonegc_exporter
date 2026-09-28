@@ -8,7 +8,7 @@ TRANSACTIONS_PATH = "/v3/spend/transactions"
 
 TRANSACTION_FILTER = "type:ne:DECLINE," "syncStatus:eq:NOT_SYNCED," "complete:eq:true"
 
-PAGE_SIZE = 100
+PAGE_SIZE = 50
 MAX_PAGES = 200
 
 
