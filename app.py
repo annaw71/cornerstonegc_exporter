@@ -811,7 +811,7 @@ elif tool == "Ramp Transactions Exporter":
                 ### Enter Transactions into Sage
 
                 1. Click **Copy Table for Sage**
-                2. Paste the transactions into Sage
+                2. Paste the transactions into Sage 4-7-7
                 3. Verify the transactions
                 4. Save them in Sage
                 5. Once saved, mark the transactions as exported in Ramp
@@ -928,10 +928,36 @@ elif tool == "BSE Puller":
                         f"${total:,.2f}",
                     )
 
+                    # Create tab-delimited text for Sage clipboard import
+                    clipboard_text = bill_df.fillna("").to_csv(
+                        sep="\t",
+                        index=False,
+                        header=False,
+                    )
+
+                    st.subheader("Copy Transactions")
+
+                    st.caption("Copy Table for Sage")
+
+                    st.code(
+                        clipboard_text,
+                        language=None,
+                    )
+
+                    st.markdown("""
+                                    ### Enter Transactions into Sage
+                    
+                                    1. Click **Copy Table for Sage**
+                                    2. Paste the transactions into Sage 4-7-7
+                                    3. Verify the transactions
+                                    4. Save them in Sage
+                                    5. Once saved, mark the transactions as exported in BSE
+                                    """)
+
                     csv_data = bill_df.to_csv(index=False).encode("utf-8")
 
                     st.download_button(
-                        label="Download BILL CSV",
+                        label="Optional CSV Download",
                         data=csv_data,
                         file_name="bill_transactions.csv",
                         mime="text/csv",
