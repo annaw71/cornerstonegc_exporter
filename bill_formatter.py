@@ -147,11 +147,12 @@ def format_bill_transactions(transactions):
             except (ValueError, TypeError):
                 pass
 
-        # BILL C# version treats amount as charge
         if amount is None or amount < 0:
             credit = amount
+            charge = None
         else:
             charge = amount
+            credit = None
 
         notes = transaction.get("Notes")
 
