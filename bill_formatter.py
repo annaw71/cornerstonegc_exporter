@@ -147,8 +147,11 @@ def format_bill_transactions(transactions):
             except (ValueError, TypeError):
                 pass
 
-        if amount is None or amount < 0:
-            credit = amount
+        if amount is None:
+            charge = None
+            credit = None
+        elif amount < 0:
+            credit = abs(amount)
             charge = None
         else:
             charge = amount
