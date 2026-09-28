@@ -148,8 +148,12 @@ def format_bill_transactions(transactions):
                 pass
 
         # BILL C# version treats amount as charge
-        charge = amount
-        credit = None
+        if amount is None or amount < 0:
+            credit = amount
+        else:
+            charge = amount
+
+        notes = transaction.get("Notes")
 
         # Sage job
         job = normalize_job(transaction.get("budgetName"))
@@ -174,7 +178,7 @@ def format_bill_transactions(transactions):
                 "Charge Amount": charge,
                 "Credit Amount": credit,
                 "Posted Date": posted_date,
-                "Notes": None,
+                "Notes": notes,
                 "Account": transaction.get("Sage General Ledger Account"),
                 "Subaccount": transaction.get("Sage Vehicle and Equipment List"),
                 "Job": job,

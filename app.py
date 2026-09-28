@@ -1044,11 +1044,14 @@ elif tool == "BSE Puller":
                     st.markdown("""
                                     ### Enter Transactions into Sage
                     
-                                    1. Click **Copy Table for Sage**
-                                    2. Paste the transactions into Sage 4-7-7
-                                    3. Verify the transactions
-                                    4. Save them in Sage
-                                    5. Once saved, mark the transactions as exported in BSE
+                                    1. Make sure the total listed above matches total in BSE.
+                                    2. Click **Copy Table for Sage**
+                                    3. Go to Sage 4-7-7
+                                    4. Select Card Issuer Account 61010 - Bill Spend & Expense
+                                    5. Paste the transactions into the first cell
+                                    6. Verify the transactions
+                                    7. Save them in Sage
+                                    8. Once saved, mark the transactions as exported in BSE
                                     """)
 
                     csv_data = bill_df.to_csv(index=False).encode("utf-8")
