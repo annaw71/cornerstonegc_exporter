@@ -928,20 +928,117 @@ elif tool == "BSE Puller":
                         f"${total:,.2f}",
                     )
 
-                    # Create tab-delimited text for Sage clipboard import
-                    clipboard_text = bill_df.fillna("").to_csv(
+                    # ====================================================
+                    # COPY TO SAGE
+                    # ====================================================
+
+                    sage_clipboard_text = bill_df.to_csv(
                         sep="\t",
                         index=False,
                         header=False,
                     )
 
-                    st.subheader("Copy Transactions")
+                    sage_copy_json = json.dumps(sage_clipboard_text)
+                    row_count = len(bill_df)
 
-                    st.caption("Copy Table for Sage")
+                    st.html(
+                        f"""
+                        <button
+                            id="copy-bill-sage-button"
+                            style="
+                                padding: 0.5rem 0.9rem;
+                                font-size: 1rem;
+                                cursor: pointer;
+                                border-radius: 0.5rem;
+                                border: 1px solid #ccc;
+                            "
+                        >
+                            Copy Table for Sage
+                        </button>
 
-                    st.code(
-                        clipboard_text,
-                        language=None,
+                        <span
+                            id="copy-bill-sage-status"
+                            style="margin-left: 10px;"
+                        ></span>
+
+                        <script>
+                            const button =
+                                document.getElementById(
+                                    "copy-bill-sage-button"
+                                );
+
+                            const status =
+                                document.getElementById(
+                                    "copy-bill-sage-status"
+                                );
+
+                            const text = {sage_copy_json};
+
+                            button.addEventListener(
+                                "click",
+                                async () => {{
+
+                                    try {{
+
+                                        if (
+                                            navigator.clipboard &&
+                                            window.isSecureContext
+                                        ) {{
+
+                                            await navigator.clipboard.writeText(
+                                                text
+                                            );
+
+                                        }} else {{
+
+                                            const textarea =
+                                                document.createElement(
+                                                    "textarea"
+                                                );
+
+                                            textarea.value = text;
+
+                                            textarea.style.position = "fixed";
+                                            textarea.style.left = "-9999px";
+
+                                            document.body.appendChild(
+                                                textarea
+                                            );
+
+                                            textarea.focus();
+                                            textarea.select();
+
+                                            const copied =
+                                                document.execCommand("copy");
+
+                                            document.body.removeChild(
+                                                textarea
+                                            );
+
+                                            if (!copied) {{
+                                                throw new Error(
+                                                    "Fallback copy failed."
+                                                );
+                                            }}
+                                        }}
+
+                                        button.innerText =
+                                            "✅ Copied {row_count} rows";
+
+                                        status.innerText = "";
+
+                                    }} catch (error) {{
+
+                                        console.error(error);
+
+                                        status.innerText =
+                                            "❌ Clipboard blocked by browser.";
+                                    }}
+                                }}
+                            );
+                        </script>
+                        """,
+                        unsafe_allow_javascript=True,
                     )
 
                     st.markdown("""
