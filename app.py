@@ -1044,11 +1044,6 @@ elif tool == "BSE Puller":
                         unsafe_allow_javascript=True,
                     )
 
-                    st.warning(
-                        f"Remember to mark these {len(bill_df)} transaction(s) "
-                        "as synced in BILL Spend & Expense."
-                    )
-
                     st.markdown("""
                                     ### Enter Transactions into Sage
                     
@@ -1059,8 +1054,13 @@ elif tool == "BSE Puller":
                                     5. Paste the transactions into the first cell
                                     6. Verify the transactions
                                     7. Save them in Sage
-                                    8. Once saved, mark the transactions as exported in BSE
+                                    
                                     """)
+
+                    st.warning(
+                        f"Remember to mark these {len(bill_df)} transaction(s) "
+                        "as synced in BILL Spend & Expense."
+                    )
 
                     csv_data = bill_df.to_csv(index=False).encode("utf-8")
 
@@ -1070,20 +1070,6 @@ elif tool == "BSE Puller":
                         file_name="bill_transactions.csv",
                         mime="text/csv",
                     )
-
-                    skipped = result["skipped_counts"]
-
-                    with st.expander("Pull Details"):
-                        st.write(f"Already integrated: {skipped['already_integrated']}")
-                        st.write(f"Not admin approved: {skipped['not_admin_approved']}")
-                        st.write(f"Declined: {skipped['declined']}")
-                        st.write(f"Duplicates: {skipped['duplicates']}")
-
-                        if result["warnings"]:
-                            st.write("Warnings:")
-
-                            for warning in result["warnings"]:
-                                st.warning(warning["message"])
 
         except Exception as e:
             st.error(f"Could not pull BILL transactions: {e}")
