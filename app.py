@@ -921,7 +921,10 @@ elif tool == "BSE Puller":
                         use_container_width=True,
                     )
 
-                    total = bill_df["Charge Amount"].fillna(0).sum()
+                    total = (
+                        bill_df["Charge Amount"].fillna(0).sum()
+                        + bill_df["Credit Amount"].fillna(0).sum()
+                    )
 
                     st.metric(
                         "Total",
