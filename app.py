@@ -1044,6 +1044,11 @@ elif tool == "BSE Puller":
                         unsafe_allow_javascript=True,
                     )
 
+                    st.warning(
+                        f"Remember to mark these {len(bill_df)} transaction(s) "
+                        "as synced in BILL Spend & Expense."
+                    )
+
                     st.markdown("""
                                     ### Enter Transactions into Sage
                     
