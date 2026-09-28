@@ -37,10 +37,7 @@ from bill_formatter import format_bill_transactions
 
 tool = st.sidebar.radio(
     "Choose Tool",
-    [
-        "Procore Payroll Exporter",
-        "Ramp Transactions Exporter",
-    ],
+    ["Procore Payroll Exporter", "Ramp Transactions Exporter", "BSE Puller"],
 )
 
 if tool == "Procore Payroll Exporter":
