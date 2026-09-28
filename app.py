@@ -30,6 +30,9 @@ from ramp_auth import get_ramp_access_token, get_accounting_connection
 from ramp import get_ready_transactions, mark_transactions_exported
 from ramp_formatter import format_ramp_transactions
 
+from bill_api import get_transactions
+from bill_formatter import format_bill_transactions
+
 # SELECTOR
 
 tool = st.sidebar.radio(
@@ -889,3 +892,67 @@ elif tool == "Ramp Transactions Exporter":
                 file_name="ramp_ready_transactions.csv",
                 mime="text/csv",
             )
+
+elif tool == "BSE Puller":
+
+    st.title("BSE Puller")
+
+    st.write(
+        "Export card transactions currently marked Approved and Not Synced in BSE."
+    )
+
+    st.header("BILL Spend & Expense")
+
+    if st.button("Pull BILL Transactions"):
+
+        try:
+            with st.spinner("Pulling BILL transactions..."):
+
+                result = get_transactions()
+
+                bill_transactions = result["transactions"]
+
+                if not bill_transactions:
+                    st.info("No exportable BILL transactions were found.")
+                else:
+                    bill_df = format_bill_transactions(bill_transactions)
+
+                    st.success(f"Pulled {len(bill_df)} transaction(s).")
+
+                    st.dataframe(
+                        bill_df,
+                        use_container_width=True,
+                    )
+
+                    total = bill_df["Charge Amount"].fillna(0).sum()
+
+                    st.metric(
+                        "Total",
+                        f"${total:,.2f}",
+                    )
+
+                    csv_data = bill_df.to_csv(index=False).encode("utf-8")
+
+                    st.download_button(
+                        label="Download BILL CSV",
+                        data=csv_data,
+                        file_name="bill_transactions.csv",
+                        mime="text/csv",
+                    )
+
+                    skipped = result["skipped_counts"]
+
+                    with st.expander("Pull Details"):
+                        st.write(f"Already integrated: {skipped['already_integrated']}")
+                        st.write(f"Not admin approved: {skipped['not_admin_approved']}")
+                        st.write(f"Declined: {skipped['declined']}")
+                        st.write(f"Duplicates: {skipped['duplicates']}")
+
+                        if result["warnings"]:
+                            st.write("Warnings:")
+
+                            for warning in result["warnings"]:
+                                st.warning(warning["message"])
+
+        except Exception as e:
+            st.error(f"Could not pull BILL transactions: {e}")
