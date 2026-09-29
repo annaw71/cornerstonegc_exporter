@@ -812,9 +812,10 @@ elif tool == "Ramp Transactions Exporter":
 
                 1. Click **Copy Table for Sage**
                 2. Paste the transactions into Sage 4-7-7
-                3. Verify the transactions
-                4. Save them in Sage
-                5. Once saved, mark the transactions as exported in Ramp
+                3. Enter card issuer account 21030 - Ramp
+                4. Verify the transactions
+                5. Save them in Sage
+                6. Once saved, mark the transactions as exported in Ramp
                 """)
 
             # ====================================================
@@ -828,10 +829,6 @@ elif tool == "Ramp Transactions Exporter":
             st.warning(
                 "Only mark these transactions as exported AFTER "
                 "you have pasted them into Sage and successfully saved them."
-            )
-
-            confirm_export = st.checkbox(
-                "I have successfully entered and saved these transactions in Sage."
             )
 
             if st.button(
