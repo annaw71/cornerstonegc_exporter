@@ -888,177 +888,182 @@ elif tool == "BSE Puller":
 
                 if not bill_transactions:
                     st.info("No exportable BILL transactions were found.")
+
+                    st.session_state.pop("bill_df", None)
+
                 else:
                     bill_df = format_bill_transactions(bill_transactions)
 
-                    st.success(f"Pulled {len(bill_df)} transaction(s).")
-
-                    st.dataframe(
-                        bill_df,
-                        use_container_width=True,
-                    )
-
-                    total = (
-                        bill_df["Charge Amount"].fillna(0).sum()
-                        - bill_df["Credit Amount"].fillna(0).sum()
-                    )
-
-                    st.metric(
-                        "Total",
-                        f"${total:,.2f}",
-                    )
-
-                    # ====================================================
-                    # COPY TO SAGE
-                    # ====================================================
-
-                    sage_clipboard_text = bill_df.to_csv(
-                        sep="\t",
-                        index=False,
-                        header=False,
-                    )
-
-                    sage_copy_json = json.dumps(sage_clipboard_text)
-                    row_count = len(bill_df)
-
-                    st.html(
-                        f"""
-                        <button
-                            id="copy-bill-sage-button"
-                            style="
-                                padding: 0.5rem 0.9rem;
-                                font-size: 1rem;
-                                cursor: pointer;
-                                border-radius: 0.5rem;
-                                border: 1px solid #ccc;
-                            "
-                        >
-                            Copy Table for Sage
-                        </button>
-
-                        <span
-                            id="copy-bill-sage-status"
-                            style="margin-left: 10px;"
-                        ></span>
-
-                        <script>
-                            const button =
-                                document.getElementById(
-                                    "copy-bill-sage-button"
-                                );
-
-                            const status =
-                                document.getElementById(
-                                    "copy-bill-sage-status"
-                                );
-
-                            const text = {sage_copy_json};
-
-                            button.addEventListener(
-                                "click",
-                                async () => {{
-
-                                    try {{
-
-                                        if (
-                                            navigator.clipboard &&
-                                            window.isSecureContext
-                                        ) {{
-
-                                            await navigator.clipboard.writeText(
-                                                text
-                                            );
-
-                                        }} else {{
-
-                                            const textarea =
-                                                document.createElement(
-                                                    "textarea"
-                                                );
-
-                                            textarea.value = text;
-
-                                            textarea.style.position = "fixed";
-                                            textarea.style.left = "-9999px";
-
-                                            document.body.appendChild(
-                                                textarea
-                                            );
-
-                                            textarea.focus();
-                                            textarea.select();
-
-                                            const copied =
-                                                document.execCommand("copy");
-
-                                            document.body.removeChild(
-                                                textarea
-                                            );
-
-                                            if (!copied) {{
-                                                throw new Error(
-                                                    "Fallback copy failed."
-                                                );
-                                            }}
-                                        }}
-
-                                        button.innerText =
-                                            "✅ Copied {row_count} rows";
-
-                                        status.innerText = "";
-
-                                    }} catch (error) {{
-
-                                        console.error(error);
-
-                                        status.innerText =
-                                            "❌ Clipboard blocked by browser.";
-                                    }}
-                                }}
-                            );
-                        </script>
-                        """,
-                        unsafe_allow_javascript=True,
-                    )
-
-                    st.markdown("""
-                                    ### Enter Transactions into Sage
-                    
-                                    1. Make sure the total listed above matches total in BSE.
-                                    2. Click **Copy Table for Sage**
-                                    3. Go to Sage 4-7-7
-                                    4. Select Card Issuer Account 21010 - Bill Spend & Expense
-                                    5. Paste the transactions into the first cell
-                                    6. Verify the transactions
-                                    7. Save them in Sage
-                                    
-                                    """)
-
-                    st.warning(
-                        f"Remember to mark these {len(bill_df)} transaction(s) "
-                        "as synced in BILL Spend & Expense."
-                    )
-
-                    csv = bill_df.to_csv(index=False).encode("utf-8")
-
-                    if st.button("Save Report to SharePoint", key="bse_button"):
-                        # upload_csv_to_sharepoint(
-                        #     csv_data=csv,
-                        #     filename=f"BSE_{date.today().strftime('%Y-%m-%d')}.csv",
-                        #     folder_path="Reports/Weekly PM Report/BSE",
-                        # )
-
-                        # st.success("BSE report uploaded to SharePoint.")
-
-                        print("BSE BUTTON CLICKED")
-                        st.write("BSEBUTTONCLICKED")
-
-                    st.download_button(
-                        label="Optional CSV Download",
-                        data=csv,
-                        file_name="bill_transactions.csv",
-                        mime="text/csv",
-                    )
+                    # Save dataframe so it survives Streamlit reruns
+                    st.session_state["bill_df"] = bill_df
 
         except Exception as e:
             st.error(f"Could not pull BILL transactions: {e}")
+
+    # ====================================================
+    # DISPLAY SAVED BSE RESULTS
+    # ====================================================
+
+    if "bill_df" in st.session_state:
+
+        bill_df = st.session_state["bill_df"]
+
+        st.success(f"Pulled {len(bill_df)} transaction(s).")
+
+        st.dataframe(
+            bill_df,
+            use_container_width=True,
+        )
+
+        total = (
+            bill_df["Charge Amount"].fillna(0).sum()
+            - bill_df["Credit Amount"].fillna(0).sum()
+        )
+
+        st.metric(
+            "Total",
+            f"${total:,.2f}",
+        )
+
+        # ====================================================
+        # COPY TO SAGE
+        # ====================================================
+
+        sage_clipboard_text = bill_df.to_csv(
+            sep="\t",
+            index=False,
+            header=False,
+        )
+
+        sage_copy_json = json.dumps(sage_clipboard_text)
+        row_count = len(bill_df)
+
+        st.html(
+            f"""
+            <button
+                id="copy-bill-sage-button"
+                style="
+                    padding: 0.5rem 0.9rem;
+                    font-size: 1rem;
+                    cursor: pointer;
+                    border-radius: 0.5rem;
+                    border: 1px solid #ccc;
+                "
+            >
+                Copy Table for Sage
+            </button>
+
+            <span
+                id="copy-bill-sage-status"
+                style="margin-left: 10px;"
+            ></span>
+
+            <script>
+                const button =
+                    document.getElementById(
+                        "copy-bill-sage-button"
+                    );
+
+                const status =
+                    document.getElementById(
+                        "copy-bill-sage-status"
+                    );
+
+                const text = {sage_copy_json};
+
+                button.addEventListener(
+                    "click",
+                    async () => {{
+
+                        try {{
+
+                            if (
+                                navigator.clipboard &&
+                                window.isSecureContext
+                            ) {{
+
+                                await navigator.clipboard.writeText(
+                                    text
+                                );
+
+                            }} else {{
+
+                                const textarea =
+                                    document.createElement(
+                                        "textarea"
+                                    );
+
+                                textarea.value = text;
+
+                                textarea.style.position = "fixed";
+                                textarea.style.left = "-9999px";
+
+                                document.body.appendChild(
+                                    textarea
+                                );
+
+                                textarea.focus();
+                                textarea.select();
+
+                                const copied =
+                                    document.execCommand("copy");
+
+                                document.body.removeChild(
+                                    textarea
+                                );
+
+                                if (!copied) {{
+                                    throw new Error(
+                                        "Fallback copy failed."
+                                    );
+                                }}
+                            }}
+
+                            button.innerText =
+                                "✅ Copied {row_count} rows";
+
+                            status.innerText = "";
+
+                        }} catch (error) {{
+
+                            console.error(error);
+
+                            status.innerText =
+                                "❌ Clipboard blocked by browser.";
+                        }}
+                    }}
+                );
+            </script>
+            """,
+            unsafe_allow_javascript=True,
+        )
+
+        st.markdown("""
+        ### Enter Transactions into Sage
+
+        1. Make sure the total listed above matches total in BSE.
+        2. Click **Copy Table for Sage**
+        3. Go to Sage 4-7-7
+        4. Select Card Issuer Account 21010 - Bill Spend & Expense
+        5. Paste the transactions into the first cell
+        6. Verify the transactions
+        7. Save them in Sage
+        """)
+
+        st.warning(
+            f"Remember to mark these {len(bill_df)} transaction(s) "
+            "as synced in BILL Spend & Expense."
+        )
+
+        csv = bill_df.to_csv(index=False).encode("utf-8")
+
+        if st.button("Save Report to SharePoint", key="bse_sharepoint_button"):
+            print("BSE BUTTON CLICKED")
+            st.success("BSE BUTTON CLICKED")
+
+        st.download_button(
+            label="Optional CSV Download",
+            data=csv,
+            file_name="bill_transactions.csv",
+            mime="text/csv",
+        )
