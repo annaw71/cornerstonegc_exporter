@@ -1041,14 +1041,17 @@ elif tool == "BSE Puller":
 
                     csv = bill_df.to_csv(index=False).encode("utf-8")
 
-                    if st.button("Save Report to SharePoint"):
-                        upload_csv_to_sharepoint(
-                            csv_data=csv,
-                            filename=f"BSE_{date.today().strftime('%Y-%m-%d')}.csv",
-                            folder_path="Reports/Weekly PM Report/BSE",
-                        )
+                    if st.button("Save Report to SharePoint", key="bse_button"):
+                        # upload_csv_to_sharepoint(
+                        #     csv_data=csv,
+                        #     filename=f"BSE_{date.today().strftime('%Y-%m-%d')}.csv",
+                        #     folder_path="Reports/Weekly PM Report/BSE",
+                        # )
 
-                        st.success("BSE report uploaded to SharePoint.")
+                        # st.success("BSE report uploaded to SharePoint.")
+
+                        print("BSE BUTTON CLICKED")
+                        st.write("BSEBUTTONCLICKED")
 
                     st.download_button(
                         label="Optional CSV Download",
