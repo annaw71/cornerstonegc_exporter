@@ -626,7 +626,7 @@ if tool == "Procore Payroll Exporter":
 
             csv = payroll_df.to_csv(index=False).encode("utf-8")
 
-            if st.button("Save Report to SharePoint"):
+            if st.button("Save Report to SharePoint", key="payroll_sharepoint_button"):
                 upload_csv_to_sharepoint(
                     csv_data=csv,
                     filename=f"Payroll_{start_date}_{date.today().strftime('%Y-%m-%d')}.csv",
@@ -636,7 +636,7 @@ if tool == "Procore Payroll Exporter":
                 st.success("Payroll report uploaded to SharePoint.")
 
             st.download_button(
-                label=("Optional: Download " "Payroll Preview CSV"),
+                label=("Optional: Download Payroll Preview CSV"),
                 data=csv,
                 file_name=(f"procore_payroll_" f"{start_date}_to_" f"{end_date}.csv"),
                 mime="text/csv",
@@ -851,7 +851,7 @@ elif tool == "Ramp Transactions Exporter":
 
             csv = df.to_csv(index=False).encode("utf-8")
 
-            if st.button("Save Report to SharePoint"):
+            if st.button("Save Report to SharePoint", key="ramp_sharepoint_button"):
                 upload_csv_to_sharepoint(
                     csv_data=csv,
                     filename=f"Ramp_{date.today().strftime('%Y-%m-%d')}.csv",
@@ -1058,8 +1058,13 @@ elif tool == "BSE Puller":
         csv = bill_df.to_csv(index=False).encode("utf-8")
 
         if st.button("Save Report to SharePoint", key="bse_sharepoint_button"):
-            print("BSE BUTTON CLICKED")
-            st.success("BSE BUTTON CLICKED")
+            upload_csv_to_sharepoint(
+                csv_data=csv,
+                filename=f"BSE_{date.today().strftime('%Y-%m-%d')}.csv",
+                folder_path="Reports/Weekly PM Report/BSE",
+            )
+
+            st.success("BSE report uploaded to SharePoint.")
 
         st.download_button(
             label="Optional CSV Download",
