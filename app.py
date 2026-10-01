@@ -33,6 +33,8 @@ from ramp_formatter import format_ramp_transactions
 from bill_api import get_transactions
 from bill_formatter import format_bill_transactions
 
+from sharepoint import upload_csv_to_sharepoint
+
 # SELECTOR
 
 tool = st.sidebar.radio(
@@ -624,12 +626,22 @@ if tool == "Procore Payroll Exporter":
 
             csv = payroll_df.to_csv(index=False).encode("utf-8")
 
+            if st.button("Save Report to SharePoint"):
+                upload_csv_to_sharepoint(
+                    csv_data=csv,
+                    filename=f"Payroll_{start_date}_{date.today().strftime('%Y-%m-%d')}.csv",
+                    folder_path="Reports/Weekly PM Report/Payroll Job Costing",
+                )
+
+                st.success("Payroll report uploaded to SharePoint.")
+
             st.download_button(
                 label=("Optional: Download " "Payroll Preview CSV"),
                 data=csv,
                 file_name=(f"procore_payroll_" f"{start_date}_to_" f"{end_date}.csv"),
                 mime="text/csv",
             )
+
 
 elif tool == "Ramp Transactions Exporter":
 
@@ -839,6 +851,15 @@ elif tool == "Ramp Transactions Exporter":
 
             csv = df.to_csv(index=False).encode("utf-8")
 
+            if st.button("Save Report to SharePoint"):
+                upload_csv_to_sharepoint(
+                    csv_data=csv,
+                    filename=f"Ramp_{date.today().strftime('%Y-%m-%d')}.csv",
+                    folder_path="Reports/Weekly PM Report/Ramp",
+                )
+
+                st.success("Ramp report uploaded to SharePoint.")
+
             st.download_button(
                 label="Optional CSV Download",
                 data=csv,
@@ -1018,11 +1039,20 @@ elif tool == "BSE Puller":
                         "as synced in BILL Spend & Expense."
                     )
 
-                    csv_data = bill_df.to_csv(index=False).encode("utf-8")
+                    csv = bill_df.to_csv(index=False).encode("utf-8")
+
+                    if st.button("Save Report to SharePoint"):
+                        upload_csv_to_sharepoint(
+                            csv_data=csv,
+                            filename=f"BSE_{date.today().strftime('%Y-%m-%d')}.csv",
+                            folder_path="Reports/Weekly PM Report/BSE",
+                        )
+
+                        st.success("BSE report uploaded to SharePoint.")
 
                     st.download_button(
                         label="Optional CSV Download",
-                        data=csv_data,
+                        data=csv,
                         file_name="bill_transactions.csv",
                         mime="text/csv",
                     )
