@@ -578,6 +578,21 @@ if tool == "Procore Payroll Exporter":
                 4. Click **Save**
                 """)
 
+            # ----------------------------------------------------
+            # CSV DOWNLOAD
+            # ----------------------------------------------------
+
+            csv = payroll_df.to_csv(index=False).encode("utf-8")
+
+            if st.button("Save Report to SharePoint", key="payroll_sharepoint_button"):
+                upload_csv_to_sharepoint(
+                    csv_data=csv,
+                    filename=f"Payroll_{start_date}_{date.today().strftime('%Y-%m-%d')}.csv",
+                    folder_path="Reports/Weekly PM Report/Payroll Job Costing",
+                )
+
+                st.success("Payroll report uploaded to SharePoint.")
+
             # -----------------------------------------------------
             # MARK EXPORTED TIME COMPLETED
             # ----------------------------------------------------
@@ -619,21 +634,6 @@ if tool == "Procore Payroll Exporter":
                 except Exception as exc:
                     st.error("Could not mark the exported time as completed.")
                     st.code(str(exc))
-
-            # ----------------------------------------------------
-            # CSV DOWNLOAD
-            # ----------------------------------------------------
-
-            csv = payroll_df.to_csv(index=False).encode("utf-8")
-
-            if st.button("Save Report to SharePoint", key="payroll_sharepoint_button"):
-                upload_csv_to_sharepoint(
-                    csv_data=csv,
-                    filename=f"Payroll_{start_date}_{date.today().strftime('%Y-%m-%d')}.csv",
-                    folder_path="Reports/Weekly PM Report/Payroll Job Costing",
-                )
-
-                st.success("Payroll report uploaded to SharePoint.")
 
             st.download_button(
                 label=("Optional: Download Payroll Preview CSV"),
