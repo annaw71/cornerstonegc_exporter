@@ -24,6 +24,20 @@ def format_ramp_transactions(transactions):
     rows = []
 
     for transaction in transactions:
+        for line_item in transaction.get("line_items") or []:
+            for selection in line_item.get("accounting_field_selections") or []:
+                print(
+                    {
+                        "field_name": (selection.get("category_info") or {}).get(
+                            "name"
+                        ),
+                        "selected_name": selection.get("name"),
+                        "display_name": selection.get("display_name"),
+                        "external_code": selection.get("external_code"),
+                    }
+                )
+
+    for transaction in transactions:
 
         card_holder = transaction.get("card_holder") or {}
 
