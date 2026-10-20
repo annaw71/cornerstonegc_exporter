@@ -63,6 +63,11 @@ def format_ramp_transactions(transactions):
                 "Sage GL Account",
             )
 
+            project = get_accounting_field(
+                line_item,
+                "Project Name",
+            )
+
             # get transaction #
             transaction_num = transaction.get("accounting_date")
 
@@ -108,7 +113,7 @@ def format_ramp_transactions(transactions):
                     "Notes": transaction.get("memo"),
                     "Account": account,
                     "Subaccount": None,
-                    "Job": None,
+                    "Job": project["name"] or project["code"] or None,
                     "Phase": None,
                     "Job Cost Code": None,
                     "Job Cost Type": None,
