@@ -2,14 +2,14 @@ import pandas as pd
 
 
 def get_accounting_field(line_item, field_name):
-    selections = line_item.get("accounting_field_selections", [])
+    selections = line_item.get("accounting_field_selections") or []
 
     for selection in selections:
         category_info = selection.get("category_info") or {}
 
         if category_info.get("name") == field_name:
             return {
-                "name": selection.get("name"),
+                "name": (selection.get("display_name") or selection.get("name")),
                 "code": selection.get("external_code"),
             }
 
