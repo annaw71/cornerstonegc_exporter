@@ -75,7 +75,6 @@ def format_ramp_transactions(transactions):
             if transaction.get("amount") > 0:
                 charge = transaction.get("amount")
                 credit = None
-
             else:
                 credit = transaction.get("amount")
                 charge = None
@@ -95,6 +94,15 @@ def format_ramp_transactions(transactions):
             elif gl_account["name"]:
                 account = gl_account["name"]
 
+            job_cost_type = None
+
+            if account == "50000 - Materials Cost":
+                job_cost_type = "1 - Material"
+            elif account == "50003 - Equipment Expense":
+                job_cost_type = "3 - Equipment"
+            else:
+                job_cost_type = None
+
             rows.append(
                 {
                     "Credit Card": "1 - Ramp",
@@ -111,7 +119,7 @@ def format_ramp_transactions(transactions):
                     "Job": job,
                     "Phase": None,
                     "Job Cost Code": None,
-                    "Job Cost Type": None,
+                    "Job Cost Type": job_cost_type,
                     "Equipment": None,
                     "Equipment Cost Code": None,
                     "Equipment Cost Type": None,
