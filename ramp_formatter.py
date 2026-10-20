@@ -54,6 +54,15 @@ def format_ramp_transactions(transactions):
                 "Project Name",
             )
 
+            job = None
+
+            if project["code"] and project["name"]:
+                job = f'{project["code"]} - {project["name"]}'
+            elif project["code"]:
+                job = project["code"]
+            elif project["name"]:
+                job = project["name"]
+
             # get transaction #
             transaction_num = transaction.get("accounting_date")
 
@@ -99,7 +108,7 @@ def format_ramp_transactions(transactions):
                     "Notes": transaction.get("memo"),
                     "Account": account,
                     "Subaccount": None,
-                    "Job": project["name"] or project["code"] or None,
+                    "Job": job,
                     "Phase": None,
                     "Job Cost Code": None,
                     "Job Cost Type": None,
