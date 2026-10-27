@@ -432,19 +432,13 @@ def get_transactions():
         MAX_PAGES + 1,
     ):
 
+        params = {
+            "filters": TRANSACTION_FILTER,
+            "max": PAGE_SIZE,
+        }
+
         if next_page:
-
-            params = {
-                "nextPage": next_page,
-                "max": PAGE_SIZE,
-            }
-
-        else:
-
-            params = {
-                "filters": TRANSACTION_FILTER,
-                "max": PAGE_SIZE,
-            }
+            params["nextPage"] = next_page
 
         response = request_with_retries(
             url,
@@ -454,6 +448,14 @@ def get_transactions():
         data = response.json()
 
         page_transactions = extract_items(data)
+
+        if not page_transactions:
+            if get_next_page_token(data):
+                raise RuntimeError(
+                    f"BILL returned an empty page with a "
+                    f"continuation token on page {page_number}."
+                )
+            break
 
         for transaction in page_transactions:
 
@@ -526,7 +528,12 @@ def get_transactions():
 
     else:
         raise RuntimeError(
-            f"BILL transaction pull stopped after " f"{MAX_PAGES} pages."
+            f"BILL reached the {MAX_PAGES}-page safety limit. "
+            f"Retrieved {MAX_PAGES * PAGE_SIZE:,} maximum possible "
+            f"API records and identified "
+            f"{len(transactions):,} exportable transactions. "
+            f"Skipped counts: {skipped_counts}. "
+            f"The export was stopped to prevent incomplete results."
         )
 
     return {
