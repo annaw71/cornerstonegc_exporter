@@ -54,6 +54,11 @@ def format_ramp_transactions(transactions):
                 "Project Name",
             )
 
+            cost_code = get_accounting_field(
+                line_item,
+                "Cost Code",
+            )
+
             job = None
 
             if project["code"] and project["name"]:
@@ -118,7 +123,7 @@ def format_ramp_transactions(transactions):
                     "Subaccount": None,
                     "Job": job,
                     "Phase": None,
-                    "Job Cost Code": None,
+                    "Job Cost Code": cost_code["code"] or None,
                     "Job Cost Type": job_cost_type,
                     "Equipment": None,
                     "Equipment Cost Code": None,
