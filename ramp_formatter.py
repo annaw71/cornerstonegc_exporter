@@ -1,17 +1,29 @@
 import pandas as pd
 
 
-def get_accounting_field(line_item, field_name):
-    selections = line_item.get("accounting_field_selections") or []
+def get_accounting_field(line_item, field_name, transaction=None):
 
-    for selection in selections:
-        category_info = selection.get("category_info") or {}
+    sources = [line_item]
 
-        if category_info.get("name") == field_name:
-            return {
-                "name": (selection.get("display_name") or selection.get("name")),
-                "code": selection.get("external_code"),
-            }
+    if transaction is not None:
+        sources.append(transaction)
+
+    for source in sources:
+
+        selections = source.get("accounting_field_selections") or []
+
+        for selection in selections:
+
+            category_info = selection.get("category_info") or {}
+
+            if (
+                category_info.get("name") or ""
+            ).strip().lower() == field_name.strip().lower():
+
+                return {
+                    "name": selection.get("display_name") or selection.get("name"),
+                    "code": selection.get("external_code"),
+                }
 
     return {
         "name": None,
@@ -57,6 +69,7 @@ def format_ramp_transactions(transactions):
             cost_code = get_accounting_field(
                 line_item,
                 "Cost Code",
+                transaction,
             )
 
             job = None
