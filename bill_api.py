@@ -544,3 +544,83 @@ def get_transactions():
         "warnings": warnings,
         "skipped_counts": skipped_counts,
     }
+
+
+def get_reimbursements():
+    """
+    Pull BILL Spend & Expense reimbursements.
+
+    Returns all non-retired reimbursement records,
+    including their current statuses.
+    """
+
+    transactions_url = f"{BASE_URL}{TRANSACTIONS_PATH}".rstrip("/")
+
+    if not transactions_url.endswith("/transactions"):
+        raise RuntimeError("Unexpected BILL transactions endpoint.")
+
+    url = transactions_url.rsplit("/", 1)[0] + "/reimbursements"
+
+    reimbursements = []
+    seen_ids = set()
+    seen_pages = set()
+    next_page = None
+
+    for page_number in range(1, MAX_PAGES + 1):
+
+        params = {
+            "max": PAGE_SIZE,
+            "sort": "submittedTime:desc",
+            "filters": "retired:eq:false",
+        }
+
+        if next_page:
+            params["nextPage"] = next_page
+
+        response = request_with_retries(
+            url,
+            params=params,
+        )
+
+        data = response.json()
+        page_items = extract_items(data)
+
+        if not page_items:
+            if get_next_page_token(data):
+                raise RuntimeError(
+                    "BILL returned an empty reimbursement "
+                    "page with a continuation token."
+                )
+            break
+
+        for reimbursement in page_items:
+
+            reimbursement_id = reimbursement.get("uuid") or reimbursement.get("id")
+
+            if not reimbursement_id:
+                raise RuntimeError("Reimbursement missing its ID.")
+
+            reimbursement_id = str(reimbursement_id)
+
+            if reimbursement_id in seen_ids:
+                continue
+
+            seen_ids.add(reimbursement_id)
+            reimbursements.append(reimbursement)
+
+        next_page = get_next_page_token(data)
+
+        if not next_page:
+            break
+
+        if next_page in seen_pages:
+            raise RuntimeError("BILL repeated a reimbursement " "pagination token.")
+
+        seen_pages.add(next_page)
+
+    else:
+        raise RuntimeError(
+            "Reimbursement page safety limit reached. " "Results may be incomplete."
+        )
+
+    return reimbursements

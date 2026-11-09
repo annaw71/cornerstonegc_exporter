@@ -1072,3 +1072,106 @@ elif tool == "BSE Puller":
             file_name="bill_transactions.csv",
             mime="text/csv",
         )
+
+    # ====================================================
+    # BILL REIMBURSEMENTS
+    # ====================================================
+
+    st.divider()
+    st.header("BILL Reimbursements")
+
+    st.write("Pull reimbursement requests from BILL " "Spend & Expense.")
+
+    if st.button("Pull BILL Reimbursements"):
+
+        try:
+            with st.spinner("Pulling BILL reimbursements..."):
+
+                reimbursements = get_reimbursements()
+
+                if not reimbursements:
+
+                    st.info("No reimbursements found.")
+
+                    st.session_state.pop(
+                        "bill_reimbursement_df",
+                        None,
+                    )
+
+                else:
+
+                    reimbursement_df = format_bill_reimbursements(reimbursements)
+
+                    st.session_state["bill_reimbursement_df"] = reimbursement_df
+
+        except Exception as e:
+            st.error(f"Could not pull reimbursements: {e}")
+
+    # ====================================================
+    # DISPLAY REIMBURSEMENTS
+    # ====================================================
+
+    if "bill_reimbursement_df" in st.session_state:
+
+        reimbursement_df = st.session_state["bill_reimbursement_df"]
+
+        available_statuses = sorted(
+            reimbursement_df["Status"].fillna("UNKNOWN").unique().tolist()
+        )
+
+        selected_statuses = st.multiselect(
+            "Filter Reimbursement Status",
+            options=available_statuses,
+            default=available_statuses,
+        )
+
+        filtered_df = reimbursement_df[
+            reimbursement_df["Status"].fillna("UNKNOWN").isin(selected_statuses)
+        ].copy()
+
+        st.success(f"Showing {len(filtered_df)} reimbursement(s).")
+
+        st.dataframe(
+            filtered_df,
+            use_container_width=True,
+        )
+
+        total = (
+            pd.to_numeric(
+                filtered_df["Amount"],
+                errors="coerce",
+            )
+            .fillna(0)
+            .sum()
+        )
+
+        st.metric(
+            "Total Reimbursements",
+            f"${total:,.2f}",
+        )
+
+        csv = filtered_df.to_csv(index=False).encode("utf-8-sig")
+
+        st.download_button(
+            label="Download Reimbursements CSV",
+            data=csv,
+            file_name="BSE_Reimbursements.csv",
+            mime="text/csv",
+        )
+
+        if st.button(
+            "Save Reimbursements to SharePoint",
+            key="bse_reimbursement_sharepoint",
+        ):
+
+            try:
+                upload_csv_to_sharepoint(
+                    csv_data=csv,
+                    filename=("BSE_Reimbursements_" f"{date.today():%Y-%m-%d}.csv"),
+                    folder_path=("Reports/Weekly PM Report/BSE"),
+                )
+
+                st.success("Reimbursement report uploaded " "to SharePoint.")
+
+            except Exception as e:
+                st.error(f"SharePoint upload failed: {e}")

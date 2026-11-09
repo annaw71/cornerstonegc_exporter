@@ -199,3 +199,44 @@ def format_bill_transactions(transactions):
         rows,
         columns=SAGE_COLUMNS,
     )
+
+
+def format_bill_reimbursements(reimbursements):
+
+    rows = []
+
+    for reimbursement in reimbursements:
+
+        row = {
+            "Reimbursement ID": (reimbursement.get("uuid") or reimbursement.get("id")),
+            "Status": reimbursement.get("status"),
+            "Type": reimbursement.get("type"),
+            "Employee ID": reimbursement.get("userId"),
+            "Merchant": reimbursement.get("merchantName"),
+            "Expense Date": reimbursement.get("occurredDate"),
+            "Submitted Date": reimbursement.get("submittedTime"),
+            "Amount": reimbursement.get("amount"),
+            "Notes": reimbursement.get("note"),
+            "Payment Method": reimbursement.get("fulfillmentType"),
+            "Budget ID": reimbursement.get("budgetId"),
+        }
+
+        # Include all reimbursement custom accounting fields
+        for field in reimbursement.get("customFields") or []:
+
+            field_name = field.get("name")
+
+            if not field_name:
+                continue
+
+            values = field.get("selectedValues") or []
+
+            row[f"Custom: {field_name}"] = ", ".join(
+                str(value.get("value"))
+                for value in values
+                if value.get("value") is not None
+            )
+
+        rows.append(row)
+
+    return pd.DataFrame(rows)
