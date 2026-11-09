@@ -30,8 +30,8 @@ from ramp_auth import get_ramp_access_token, get_accounting_connection
 from ramp import get_ready_transactions, mark_transactions_exported
 from ramp_formatter import format_ramp_transactions
 
-from bill_api import get_transactions
-from bill_formatter import format_bill_transactions
+from bill_api import get_transactions, get_reimbursements
+from bill_formatter import format_bill_transactions, format_bill_reimbursements
 
 from sharepoint import upload_csv_to_sharepoint
 
