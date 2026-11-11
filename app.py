@@ -1115,46 +1115,6 @@ elif tool == "BSE Puller":
 
         reimbursement_df = st.session_state["bill_reimbursement_df"]
 
-        # DEBUG: Show all statuses returned by BILL
-        st.subheader("BILL API Status Check")
-
-        st.write("Total reimbursements retrieved:", len(reimbursement_df))
-
-        st.dataframe(
-            reimbursement_df["Status"]
-            .fillna("(missing)")
-            .astype(str)
-            .value_counts()
-            .rename_axis("Status")
-            .reset_index(name="Count"),
-            use_container_width=True,
-        )
-
-        st.subheader("Approved Reimbursements Check")
-
-        approved_df = reimbursement_df[
-            reimbursement_df["Status"].fillna("").str.strip().str.upper() == "APPROVED"
-        ].copy()
-
-        approved_df = approved_df.sort_values(
-            "Submitted Date",
-            ascending=False,
-        )
-
-        st.dataframe(
-            approved_df[
-                [
-                    "Reimbursement ID",
-                    "Merchant",
-                    "Amount",
-                    "Expense Date",
-                    "Submitted Date",
-                    "Status",
-                ]
-            ],
-            use_container_width=True,
-        )
-
         # Match API statuses to BSE display statuses
         status_mapping = {
             "APPROVED": "Payment Pending",
@@ -1213,8 +1173,9 @@ elif tool == "BSE Puller":
         st.success(f"Showing {len(filtered_df)} reimbursement(s).")
 
         st.dataframe(
-            filtered_df,
+            filtered_df.drop(columns=["Status"]),
             use_container_width=True,
+            hide_index=True,
         )
 
         total = (
