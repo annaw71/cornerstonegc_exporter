@@ -379,8 +379,23 @@ def format_sage_reimbursements(reimbursement_df):
         # Sage accounting fields
         # ----------------------------------------
 
-        # Sage Direct Expense GL Account only
-        gl_account = get_custom_field(reimbursement, "Sage Direct Expense GL Accounts")
+        # ----------------------------------------
+        # Sage GL Account - based on Budget
+        # ----------------------------------------
+
+        budget_name = str(reimbursement.get("Budget Name") or "").strip()
+
+        if budget_name.casefold() == "overhead - discretionary":
+
+            # Overhead reimbursements use the general GL
+            gl_account = get_custom_field(reimbursement, "Sage General Ledger Account")
+
+        else:
+
+            # All other reimbursements use direct expense GL
+            gl_account = get_custom_field(
+                reimbursement, "Sage Direct Expense GL Accounts"
+            )
 
         job_cost_code = get_custom_field(reimbursement, "Sage Job Cost Codes")
 
