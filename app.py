@@ -1130,6 +1130,31 @@ elif tool == "BSE Puller":
             use_container_width=True,
         )
 
+        st.subheader("Approved Reimbursements Check")
+
+        approved_df = reimbursement_df[
+            reimbursement_df["Status"].fillna("").str.strip().str.upper() == "APPROVED"
+        ].copy()
+
+        approved_df = approved_df.sort_values(
+            "Submitted Date",
+            ascending=False,
+        )
+
+        st.dataframe(
+            approved_df[
+                [
+                    "Reimbursement ID",
+                    "Merchant",
+                    "Amount",
+                    "Expense Date",
+                    "Submitted Date",
+                    "Status",
+                ]
+            ],
+            use_container_width=True,
+        )
+
         # Only include reimbursements eligible for Sage
         eligible_statuses = {
             "PAYMENT_PENDING",
