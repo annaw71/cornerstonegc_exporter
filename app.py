@@ -1115,18 +1115,36 @@ elif tool == "BSE Puller":
 
         reimbursement_df = st.session_state["bill_reimbursement_df"]
 
-        available_statuses = sorted(
-            reimbursement_df["Status"].fillna("UNKNOWN").unique().tolist()
+        # Only include reimbursements eligible for Sage
+        eligible_statuses = {
+            "PAYMENT_PENDING",
+            "PAID",
+        }
+
+        eligible_df = reimbursement_df[
+            reimbursement_df["Status"].fillna("").str.upper().isin(eligible_statuses)
+        ].copy()
+
+        excluded_count = len(reimbursement_df) - len(eligible_df)
+
+        st.caption(
+            f"{excluded_count} reimbursement(s) excluded " "because of payment status."
         )
 
         selected_statuses = st.multiselect(
-            "Filter Reimbursement Status",
-            options=available_statuses,
-            default=available_statuses,
+            "Reimbursement Payment Status",
+            options=[
+                "PAYMENT_PENDING",
+                "PAID",
+            ],
+            default=[
+                "PAYMENT_PENDING",
+                "PAID",
+            ],
         )
 
-        filtered_df = reimbursement_df[
-            reimbursement_df["Status"].fillna("UNKNOWN").isin(selected_statuses)
+        filtered_df = eligible_df[
+            eligible_df["Status"].fillna("").str.upper().isin(selected_statuses)
         ].copy()
 
         st.success(f"Showing {len(filtered_df)} reimbursement(s).")
