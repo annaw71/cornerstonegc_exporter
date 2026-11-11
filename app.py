@@ -1192,6 +1192,61 @@ elif tool == "BSE Puller":
 
         st.subheader("Sage Reimbursement Import")
 
+
+general_col = next(
+    (
+        col
+        for col in [
+            "Custom: Sage General Ledger Account",
+            "Custom: Sage General Ledger Account",
+        ]
+        if col in filtered_df.columns
+    ),
+    None,
+)
+
+direct_col = next(
+    (
+        col
+        for col in [
+            "Custom: 1 - Sage Direct Expense GL Accounts",
+            "Custom: Sage Direct Expense GL Accounts",
+        ]
+        if col in filtered_df.columns
+    ),
+    None,
+)
+
+if general_col and direct_col:
+
+    general = filtered_df[general_col].fillna("").astype(str).str.strip()
+
+    direct = filtered_df[direct_col].fillna("").astype(str).str.strip()
+
+    conflict_mask = general.ne("") & direct.ne("") & general.ne(direct)
+
+    conflicts = filtered_df.loc[
+        conflict_mask,
+        [
+            "Reimbursement ID",
+            "Employee Name",
+            general_col,
+            direct_col,
+        ],
+    ]
+
+    if not conflicts.empty:
+
+        st.warning(
+            f"{len(conflicts)} reimbursement(s) " "have conflicting GL accounts."
+        )
+
+        st.dataframe(
+            conflicts,
+            use_container_width=True,
+            hide_index=True,
+        )
+
         sage_reimbursement_df = format_sage_reimbursements(filtered_df)
 
         st.dataframe(

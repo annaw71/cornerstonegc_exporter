@@ -379,29 +379,8 @@ def format_sage_reimbursements(reimbursement_df):
         # Sage accounting fields
         # ----------------------------------------
 
-        # Sage General Ledger Account
-        general_account = get_custom_field(
-            reimbursement, "Sage General Ledger Account"
-        ) or get_custom_field(reimbursement, "Sage General Ledger Account")
-
-        # Sage Direct Expense GL Account
-        direct_expense_account = get_custom_field(
-            reimbursement, "Sage Direct Expense GL Accounts"
-        ) or get_custom_field(reimbursement, "Sage Direct Expense GL Account")
-
-        # Flag conflicting accounts instead of guessing
-        if (
-            general_account
-            and direct_expense_account
-            and str(general_account).strip() != str(direct_expense_account).strip()
-        ):
-            raise ValueError(
-                "Conflicting GL accounts for reimbursement "
-                f"{reimbursement.get('Reimbursement ID')}: "
-                f"{general_account} vs {direct_expense_account}"
-            )
-
-        gl_account = general_account or direct_expense_account
+        # Sage Direct Expense GL Account only
+        gl_account = get_custom_field(reimbursement, "Sage Direct Expense GL Accounts")
 
         job_cost_code = get_custom_field(reimbursement, "Sage Job Cost Codes")
 
