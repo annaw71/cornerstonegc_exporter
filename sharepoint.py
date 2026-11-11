@@ -87,7 +87,9 @@ def upload_csv_to_sharepoint(
     return response.json()
 
 
-def get_bse_reimbursement_sync_history():
+def get_bse_reimbursement_sync_history(
+    file_path="Reports/Streamlit/BSE_Reimbursement_Sync_History.csv",
+):
     """
     Read confirmed reimbursement IDs from SharePoint.
 
@@ -98,7 +100,7 @@ def get_bse_reimbursement_sync_history():
     token = get_graph_token()
     site_id = get_sharepoint_site_id()
 
-    file_path = "Reports/Streamlit/" "BSE_Reimbursement_Sync_History.csv"
+    # file_path = "Reports/Streamlit/" "BSE_Reimbursement_Sync_History.csv"
 
     encoded_path = quote(file_path, safe="/")
 
@@ -164,7 +166,7 @@ def get_bse_reimbursement_sync_history():
     return confirmed_ids
 
 
-def confirm_bse_reimbursement_sync(reimbursement_df):
+def confirm_bse_reimbursement_sync(reimbursement_df, test_mode=False):
     """
     Append successfully saved Sage reimbursements
     to the SharePoint sync history.
@@ -178,7 +180,10 @@ def confirm_bse_reimbursement_sync(reimbursement_df):
     token = get_graph_token()
     site_id = get_sharepoint_site_id()
 
-    path = "Reports/Streamlit/" "BSE_Reimbursement_Sync_History.csv"
+    if test_mode:
+        path = "Reports/Streamlit/" "BSE_Reimbursement_Sync_History_TEST.csv"
+    else:
+        path = "Reports/Streamlit/" "BSE_Reimbursement_Sync_History.csv"
 
     encoded_path = quote(path, safe="/")
 
@@ -335,7 +340,7 @@ def confirm_bse_reimbursement_sync(reimbursement_df):
     upload_response.raise_for_status()
 
     # Verify the confirmed IDs are now in SharePoint
-    verified_ids = get_bse_reimbursement_sync_history()
+    verified_ids = get_bse_reimbursement_sync_history(file_path=path)
 
     if not new_ids.issubset(verified_ids):
         raise RuntimeError(

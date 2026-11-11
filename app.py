@@ -7,6 +7,7 @@ import secrets
 import hashlib
 import hmac
 
+from uuid import uuid4
 from datetime import date, timedelta
 
 from procore import (
@@ -1091,6 +1092,104 @@ elif tool == "BSE Puller":
 
     st.divider()
     st.header("BILL Reimbursements")
+
+    # ====================================================
+    # TEST SHAREPOINT REIMBURSEMENT SYNC
+    # ====================================================
+
+    if st.button(
+        "Test SharePoint Sync Write",
+        key="test_bse_sync_write",
+    ):
+
+        try:
+            test_path = "Reports/Streamlit/" "BSE_Reimbursement_Sync_History_TEST.csv"
+
+            # Read both histories before testing
+            production_before = get_bse_reimbursement_sync_history()
+
+            test_before = get_bse_reimbursement_sync_history(file_path=test_path)
+
+            # Generate a unique fake reimbursement
+            test_id = f"TEST_ONLY_{uuid4().hex}"
+
+            test_df = pd.DataFrame(
+                [
+                    {
+                        "Reimbursement ID": test_id,
+                        "Employee Name": "TEST EMPLOYEE",
+                        "Amount": 10.00,
+                        "Status": "PAID",
+                        "Submitted Date": (date.today().isoformat()),
+                    }
+                ]
+            )
+
+            # Write ONLY to TEST history
+            added_count = confirm_bse_reimbursement_sync(
+                test_df,
+                test_mode=True,
+            )
+
+            # Read both histories after testing
+            test_after = get_bse_reimbursement_sync_history(file_path=test_path)
+
+            production_after = get_bse_reimbursement_sync_history()
+
+            # Verify original records remain
+            if not test_before.issubset(test_after):
+                raise RuntimeError("Original TEST history IDs were lost.")
+
+            if (
+                added_count != 1
+                or test_id not in test_after
+                or len(test_after) != len(test_before) + 1
+            ):
+                raise RuntimeError("TEST history update verification failed.")
+
+            # Verify production history was unchanged
+            if production_before != production_after:
+                raise RuntimeError(
+                    "Production history changed during testing. "
+                    "Review before proceeding."
+                )
+
+            # Test duplicate protection
+            try:
+                confirm_bse_reimbursement_sync(
+                    test_df,
+                    test_mode=True,
+                )
+
+            except RuntimeError as duplicate_error:
+                message = str(duplicate_error).lower()
+
+                if "already" not in message and "duplicate" not in message:
+                    raise
+
+            else:
+                raise RuntimeError("Duplicate reimbursement was accepted.")
+
+            st.success("SharePoint sync test passed!")
+
+            st.write("Production history:", f"{len(production_after):,} records")
+
+            st.write("TEST history:", f"{len(test_after):,} records")
+
+            st.success(
+                "Original records preserved, "
+                "new record added, and duplicate "
+                "protection verified."
+            )
+
+        except Exception as e:
+            st.error(f"SharePoint sync test failed: {e}")
+            st.warning(
+                "If a write may have succeeded, inspect "
+                "the TEST file before trying again. "
+                "Do not use the production confirmation yet."
+            )
+    # ---------------------------------------------------------
 
     confirmed_count = st.session_state.pop(
         "bse_last_confirmed_count",
