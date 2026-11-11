@@ -41,7 +41,7 @@ from bill_formatter import (
     format_sage_reimbursements,
 )
 
-from sharepoint import upload_csv_to_sharepoint
+from sharepoint import upload_csv_to_sharepoint, get_bse_reimbursement_sync_history
 
 # SELECTOR
 
@@ -1087,6 +1087,23 @@ elif tool == "BSE Puller":
 
     st.divider()
     st.header("BILL Reimbursements")
+
+    # ====================================================
+    # TEST REIMBURSEMENT SYNC HISTORY
+    # ====================================================
+
+    if st.button("Test Reimbursement Sync History"):
+
+        try:
+            synced_ids = get_bse_reimbursement_sync_history()
+
+            st.success("Successfully connected to SharePoint!")
+
+            st.write("Previously synced reimbursements:", f"{len(synced_ids):,}")
+
+        except Exception as e:
+            st.error(f"Could not read reimbursement history: {e}")
+    # ---------------------------------------------------------------------
 
     st.write("Pull reimbursement requests from BILL " "Spend & Expense.")
 
