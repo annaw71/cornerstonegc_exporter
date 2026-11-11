@@ -1240,6 +1240,49 @@ elif tool == "BSE Puller":
             eligible_df["Payment Status"].isin(selected_statuses)
         ].copy()
 
+        # ====================================================
+        # EXCLUDE PREVIOUSLY SYNCED REIMBURSEMENTS
+        # ====================================================
+
+        try:
+            synced_ids = get_bse_reimbursement_sync_history()
+
+            # Protect the original historical baseline
+            if len(synced_ids) < 3726:
+                raise RuntimeError(
+                    "Sync history contains fewer than the "
+                    "3,726 original confirmed reimbursements. "
+                    "Check SharePoint history before continuing."
+                )
+
+        except Exception as e:
+            st.error(f"Could not verify reimbursement sync " f"history: {e}")
+            st.stop()
+
+        # Make sure every reimbursement has a valid ID
+        reimbursement_ids = filtered_df["Reimbursement ID"].astype("string").str.strip()
+
+        if reimbursement_ids.isna().any() or reimbursement_ids.eq("").any():
+            st.error("Some reimbursements have missing IDs. " "Sage import blocked.")
+            st.stop()
+
+        # Count reimbursements before excluding synced IDs
+        total_eligible = len(filtered_df)
+
+        # Remove IDs already confirmed in SharePoint
+        filtered_df = filtered_df.loc[~reimbursement_ids.isin(synced_ids)].copy()
+
+        already_synced = total_eligible - len(filtered_df)
+
+        # Display results
+        st.write(f"Previously synced reimbursements excluded: " f"{already_synced:,}")
+
+        st.write(f"New reimbursements ready for review: " f"{len(filtered_df):,}")
+
+        if filtered_df.empty:
+            st.info("No new reimbursements need to be " "entered into Sage.")
+        # -------------------------------------------------------
+
         st.success(f"Showing {len(filtered_df)} reimbursement(s).")
 
         st.dataframe(
