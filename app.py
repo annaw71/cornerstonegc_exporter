@@ -1116,10 +1116,6 @@ elif tool == "BSE Puller":
 
                 st.session_state["bill_reimbursement_reference_data"] = reference_data
 
-                st.write("BILL users retrieved:", len(reference_data["users"]))
-
-                st.write("BILL budgets retrieved:", len(reference_data["budgets"]))
-
                 if not reimbursements:
 
                     st.info("No reimbursements found.")
