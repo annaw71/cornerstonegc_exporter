@@ -1,3 +1,5 @@
+from urllib import response
+
 import requests
 from urllib.parse import urlencode
 import streamlit as st
@@ -150,12 +152,8 @@ def get_timecards(
             )
 
             if not response.ok:
-                failed_projects.append(project_name)
-
-                st.error(
-                    f"Failed to load timecards for {project_name}\n"
-                    f"HTTP Status: {response.status_code}\n"
-                    f"Error: {response.text[:500]}"
+                failed_projects.append(
+                    f"{project_name} | HTTP {response.status_code} | {response.text[:500]}"
                 )
                 break
 
