@@ -1115,6 +1115,21 @@ elif tool == "BSE Puller":
 
         reimbursement_df = st.session_state["bill_reimbursement_df"]
 
+        # DEBUG: Show all statuses returned by BILL
+        st.subheader("BILL API Status Check")
+
+        st.write("Total reimbursements retrieved:", len(reimbursement_df))
+
+        st.dataframe(
+            reimbursement_df["Status"]
+            .fillna("(missing)")
+            .astype(str)
+            .value_counts()
+            .rename_axis("Status")
+            .reset_index(name="Count"),
+            use_container_width=True,
+        )
+
         # Only include reimbursements eligible for Sage
         eligible_statuses = {
             "PAYMENT_PENDING",
