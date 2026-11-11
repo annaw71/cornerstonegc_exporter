@@ -274,3 +274,148 @@ def format_bill_reimbursements(reimbursements, reference_data):
         rows.append(row)
 
     return pd.DataFrame(rows)
+
+
+def format_sage_reimbursements(reimbursement_df):
+    """
+    Format BILL reimbursements for Sage 4-7-7.
+    Uses the same column layout as BSE card transactions.
+    """
+
+    def get_custom_field(row, field_name):
+        # Match BILL custom fields even if they
+        # have numbering prefixes such as "1 - "
+        for column in row.index:
+
+            if not str(column).startswith("Custom:"):
+                continue
+
+            clean_name = str(column).replace("Custom:", "", 1).strip().lower()
+
+            if clean_name.endswith(field_name.lower()):
+                value = row[column]
+
+                if pd.notna(value) and str(value).strip():
+                    return value
+
+        return None
+
+    rows = []
+
+    for _, reimbursement in reimbursement_df.iterrows():
+
+        employee = reimbursement.get("Employee Name") or ""
+        merchant = reimbursement.get("Merchant") or ""
+        purpose = reimbursement.get("Notes") or ""
+
+        # ----------------------------------------
+        # Transaction number - submitted date
+        # ----------------------------------------
+
+        transaction_num = format_transaction_number(reimbursement.get("Submitted Date"))
+
+        # ----------------------------------------
+        # Posted date - purchased date
+        # ----------------------------------------
+
+        posted_date = format_posted_date(reimbursement.get("Expense Date"))
+
+        # ----------------------------------------
+        # Amount
+        # ----------------------------------------
+
+        amount = reimbursement.get("Amount")
+
+        if pd.isna(amount):
+            amount = None
+        else:
+            amount = float(str(amount).replace("$", "").replace(",", ""))
+
+        if amount is None:
+            charge = None
+            credit = None
+        elif amount < 0:
+            charge = None
+            credit = abs(amount)
+        else:
+            charge = amount
+            credit = None
+
+        # ----------------------------------------
+        # Mileage description
+        # ----------------------------------------
+
+        reimbursement_type = reimbursement.get("Type")
+
+        mileage = None
+
+        if reimbursement_type == "MILEAGE":
+            mileage = "Mileage"
+
+        # ----------------------------------------
+        # Description
+        # ----------------------------------------
+
+        description_parts = [
+            employee,
+            purpose,
+            mileage,
+            merchant,
+        ]
+
+        description = " - ".join(
+            str(part).strip()
+            for part in description_parts
+            if pd.notna(part) and str(part).strip()
+        )
+
+        # ----------------------------------------
+        # Job
+        # ----------------------------------------
+
+        job = normalize_job(reimbursement.get("Budget Name"))
+
+        # ----------------------------------------
+        # Sage accounting fields
+        # ----------------------------------------
+
+        gl_account = get_custom_field(reimbursement, "Sage Direct Expense GL Account")
+
+        job_cost_code = get_custom_field(reimbursement, "Sage Job Cost Codes")
+
+        job_cost_type = get_custom_field(reimbursement, "Sage Cost Types")
+
+        if not job_cost_code:
+            job_cost_type = None
+
+        # ----------------------------------------
+        # Sage row
+        # ----------------------------------------
+
+        rows.append(
+            {
+                "Credit Card": "1 - BSE Reimbursements",
+                "Include": "Include",
+                "Transaction #": transaction_num,
+                "Description": description,
+                "Payee": employee,
+                "Charge Amount": charge,
+                "Credit Amount": credit,
+                "Posted Date": posted_date,
+                "Notes": purpose,
+                "Account": gl_account,
+                "Subaccount": None,
+                "Job": job,
+                "Phase": None,
+                "Job Cost Code": job_cost_code,
+                "Job Cost Type": job_cost_type,
+                "Equipment": None,
+                "Equipment Cost Code": None,
+                "Equipment Cost Type": None,
+            }
+        )
+
+    return pd.DataFrame(
+        rows,
+        columns=SAGE_COLUMNS,
+    )

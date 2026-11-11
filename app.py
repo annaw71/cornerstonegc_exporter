@@ -35,7 +35,11 @@ from bill_api import (
     get_reimbursements,
     get_reimbursement_reference_data,
 )
-from bill_formatter import format_bill_transactions, format_bill_reimbursements
+from bill_formatter import (
+    format_bill_transactions,
+    format_bill_reimbursements,
+    format_sage_reimbursements,
+)
 
 from sharepoint import upload_csv_to_sharepoint
 
@@ -1181,6 +1185,43 @@ elif tool == "BSE Puller":
             use_container_width=True,
             hide_index=True,
         )
+
+        # ====================================================
+        # SAGE REIMBURSEMENT PREVIEW
+        # ====================================================
+
+        st.subheader("Sage Reimbursement Import")
+
+        sage_reimbursement_df = format_sage_reimbursements(filtered_df)
+
+        st.dataframe(
+            sage_reimbursement_df,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        # Check required Sage fields
+        missing_accounts = (
+            sage_reimbursement_df["Account"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .eq("")
+            .sum()
+        )
+
+        missing_payees = (
+            sage_reimbursement_df["Payee"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .eq("")
+            .sum()
+        )
+
+        st.write(f"Missing GL Accounts: {missing_accounts}")
+
+        st.write(f"Missing Payees: {missing_payees}")
 
         total = (
             pd.to_numeric(
