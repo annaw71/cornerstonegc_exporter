@@ -1244,13 +1244,19 @@ elif tool == "BSE Puller":
                 "All caught up! No new reimbursements " "need to be imported into Sage."
             )
 
-        st.success(f"Showing {len(filtered_df)} reimbursement(s).")
+        # Only display BILL data when reimbursements exist
+        if not filtered_df.empty:
 
-        st.dataframe(
-            filtered_df.drop(columns=["Status"]),
-            use_container_width=True,
-            hide_index=True,
-        )
+            with st.expander(
+                f"View BILL Reimbursement Details ({len(filtered_df)})",
+                expanded=False,
+            ):
+
+                st.dataframe(
+                    filtered_df.drop(columns=["Status"]),
+                    use_container_width=True,
+                    hide_index=True,
+                )
 
         # ====================================================
         # SAGE REIMBURSEMENT PREVIEW
@@ -1304,11 +1310,13 @@ elif tool == "BSE Puller":
 
         sage_reimbursement_df = format_sage_reimbursements(sage_source_df)
 
-        st.dataframe(
-            sage_reimbursement_df,
-            use_container_width=True,
-            hide_index=True,
-        )
+        if not sage_reimbursement_df.empty:
+
+            st.dataframe(
+                sage_reimbursement_df,
+                use_container_width=True,
+                hide_index=True,
+            )
 
         # Check required Sage fields
         missing_accounts = (
@@ -1329,9 +1337,13 @@ elif tool == "BSE Puller":
             .sum()
         )
 
-        st.write(f"Missing GL Accounts: {missing_accounts}")
+        if missing_accounts > 0:
+            st.warning(
+                f"{missing_accounts} reimbursement(s) " "are missing GL accounts."
+            )
 
-        st.write(f"Missing Payees: {missing_payees}")
+        if missing_payees > 0:
+            st.warning(f"{missing_payees} reimbursement(s) " "are missing payees.")
 
         total = (
             pd.to_numeric(
