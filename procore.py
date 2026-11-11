@@ -4,6 +4,8 @@ import requests
 from urllib.parse import urlencode
 import streamlit as st
 import json
+import time
+import random
 
 
 def build_authorization_url(login_url, client_id, redirect_uri, state):
@@ -145,11 +147,32 @@ def get_timecards(
                 "page": page,
             }
 
-            response = requests.get(
-                timecards_url,
-                headers=headers,
-                params=params,
-            )
+            for attempt in range(4):
+                response = requests.get(
+                    timecards_url,
+                    headers=headers,
+                    params=params,
+                    timeout=30,
+                )
+
+                if response.status_code != 429:
+                    break
+
+                retry_after = response.headers.get("Retry-After")
+
+                try:
+                    wait_seconds = (
+                        float(retry_after)
+                        if retry_after
+                        else 2 ** (attempt + 1) + random.uniform(0, 1)
+                    )
+                except (ValueError, TypeError):
+                    wait_seconds = 2 ** (attempt + 1) + random.uniform(0, 1)
+
+                if attempt == 3 or wait_seconds > 120:
+                    break
+
+                time.sleep(max(1, wait_seconds))
 
             if not response.ok:
                 failed_projects.append(
