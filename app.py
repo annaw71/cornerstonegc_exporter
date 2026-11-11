@@ -1156,6 +1156,51 @@ elif tool == "BSE Puller":
             reimbursement_df["Payment Status"].notna()
         ].copy()
 
+        # ====================================================
+        # INITIAL REIMBURSEMENT SYNC HISTORY
+        # ====================================================
+
+        st.subheader("Initial Reimbursement Sync History")
+
+        baseline_columns = [
+            "Reimbursement ID",
+            "Employee Name",
+            "Amount",
+            "Status",
+            "Submitted Date",
+        ]
+
+        baseline_df = eligible_df[baseline_columns].copy()
+
+        # Check that every reimbursement has an ID
+        missing_ids = baseline_df["Reimbursement ID"].isna() | baseline_df[
+            "Reimbursement ID"
+        ].astype(str).str.strip().eq("")
+
+        if missing_ids.any():
+
+            st.error(
+                f"{missing_ids.sum()} reimbursement(s) "
+                "are missing IDs. Cannot create baseline."
+            )
+
+        else:
+
+            baseline_df = baseline_df.drop_duplicates(subset=["Reimbursement ID"])
+
+            baseline_df["Sync Status"] = "Confirmed"
+            baseline_df["Sync Source"] = "Historical Baseline"
+            baseline_df["Recorded Date"] = date.today().isoformat()
+
+            st.write("Reimbursements in initial history:", len(baseline_df))
+
+            st.download_button(
+                label="Download Initial Sync History",
+                data=baseline_df.to_csv(index=False).encode("utf-8-sig"),
+                file_name=("BSE_Reimbursement_Initial_History.csv"),
+                mime="text/csv",
+            )
+
         excluded_count = len(reimbursement_df) - len(eligible_df)
 
         st.caption(
