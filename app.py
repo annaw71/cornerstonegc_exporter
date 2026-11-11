@@ -1297,6 +1297,107 @@ elif tool == "BSE Puller":
             f"${total:,.2f}",
         )
 
+        # ====================================================
+        # COPY REIMBURSEMENTS TO SAGE
+        # ====================================================
+
+        if sage_reimbursement_df.empty:
+
+            st.info("No new reimbursements available to copy.")
+
+        elif missing_accounts > 0 or missing_payees > 0:
+
+            st.error(
+                "Some reimbursements have missing GL "
+                "accounts or payees. Resolve these "
+                "before copying into Sage."
+            )
+
+        else:
+
+            sage_clipboard_text = sage_reimbursement_df.to_csv(
+                sep="\t",
+                index=False,
+                header=False,
+            )
+
+            sage_copy_json = json.dumps(sage_clipboard_text).replace("<", "\\u003c")
+
+            row_count = len(sage_reimbursement_df)
+
+            st.html(
+                f"""
+                <button
+                    id="copy-reimbursement-sage-button"
+                    style="
+                        padding: 0.5rem 0.9rem;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        border-radius: 0.5rem;
+                        border: 1px solid #ccc;
+                    "
+                >
+                    Copy Reimbursements for Sage
+                </button>
+
+                <span
+                    id="copy-reimbursement-status"
+                    style="margin-left: 10px;"
+                ></span>
+
+                <script>
+                    const button = document.getElementById(
+                        "copy-reimbursement-sage-button"
+                    );
+
+                    const status = document.getElementById(
+                        "copy-reimbursement-status"
+                    );
+
+                    const text = {sage_copy_json};
+
+                    button.addEventListener(
+                        "click",
+                        async () => {{
+
+                            try {{
+
+                                await navigator.clipboard.writeText(
+                                    text
+                                );
+
+                                button.innerText =
+                                    "Copied {row_count} rows";
+
+                                status.innerText = "";
+
+                            }} catch (error) {{
+
+                                console.error(error);
+
+                                status.innerText =
+                                    "Clipboard access blocked.";
+                            }}
+                        }}
+                    );
+                </script>
+                """,
+                unsafe_allow_javascript=True,
+            )
+
+            st.markdown("""
+            ### Enter Reimbursements into Sage
+
+            1. Click **Copy Reimbursements for Sage**.
+            2. Open **Sage 4-7-7**.
+            3. Select Card Issuer Account
+               **21011 - BSE Reimbursements**.
+            4. Paste into the first transaction cell.
+            5. Verify the total, GL accounts, jobs,
+               and cost codes.
+            6. Save the transactions in Sage.
+            """)
+
         csv = filtered_df.to_csv(index=False).encode("utf-8-sig")
 
         st.download_button(
