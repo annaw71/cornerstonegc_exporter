@@ -201,27 +201,61 @@ def format_bill_transactions(transactions):
     )
 
 
-def format_bill_reimbursements(reimbursements):
+def format_bill_reimbursements(reimbursements, reference_data):
+
+    # Build employee lookup
+    user_lookup = {}
+
+    for user in reference_data["users"]:
+
+        first_name = user.get("firstName") or ""
+        last_name = user.get("lastName") or ""
+
+        full_name = f"{first_name} {last_name}".strip()
+
+        for key in ("uuid", "id"):
+            if user.get(key):
+                user_lookup[str(user[key])] = full_name
+
+    # Build budget lookup
+    budget_lookup = {}
+
+    for budget in reference_data["budgets"]:
+
+        budget_name = budget.get("name")
+
+        for key in ("uuid", "id"):
+            if budget.get(key):
+                budget_lookup[str(budget[key])] = budget_name
 
     rows = []
 
     for reimbursement in reimbursements:
 
+        user_id = reimbursement.get("userUuid") or reimbursement.get("userId")
+
+        budget_id = reimbursement.get("budgetUuid") or reimbursement.get("budgetId")
+
+        employee_name = user_lookup.get(str(user_id))
+        budget_name = budget_lookup.get(str(budget_id))
+
         row = {
             "Reimbursement ID": (reimbursement.get("uuid") or reimbursement.get("id")),
             "Status": reimbursement.get("status"),
             "Type": reimbursement.get("type"),
-            "Employee ID": reimbursement.get("userId"),
+            "Employee Name": employee_name,
             "Merchant": reimbursement.get("merchantName"),
             "Expense Date": reimbursement.get("occurredDate"),
             "Submitted Date": reimbursement.get("submittedTime"),
             "Amount": reimbursement.get("amount"),
             "Notes": reimbursement.get("note"),
             "Payment Method": reimbursement.get("fulfillmentType"),
-            "Budget ID": reimbursement.get("budgetId"),
+            "Budget Name": budget_name,
+            "Employee ID": user_id,
+            "Budget ID": budget_id,
         }
 
-        # Include all reimbursement custom accounting fields
+        # Preserve reimbursement accounting fields
         for field in reimbursement.get("customFields") or []:
 
             field_name = field.get("name")

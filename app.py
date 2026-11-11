@@ -1112,7 +1112,9 @@ elif tool == "BSE Puller":
 
                 else:
 
-                    reimbursement_df = format_bill_reimbursements(reimbursements)
+                    reimbursement_df = format_bill_reimbursements(
+                        reimbursements, reference_data
+                    )
 
                     st.session_state["bill_reimbursement_df"] = reimbursement_df
 
