@@ -388,7 +388,7 @@ if tool == "Procore Payroll Exporter":
                 st.session_state["timecards"] = all_timecards
 
                 for project_name in failed_projects:
-                    st.warning("Could not load timecards for {project_name}: {e}")
+                    st.warning(f"Could not load timecards for {project_name}.")
 
             except Exception as exc:
                 st.error("Could not load timesheets.")

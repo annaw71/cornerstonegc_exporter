@@ -151,6 +151,12 @@ def get_timecards(
 
             if not response.ok:
                 failed_projects.append(project_name)
+
+                st.error(
+                    f"Failed to load timecards for {project_name}\n"
+                    f"HTTP Status: {response.status_code}\n"
+                    f"Error: {response.text[:500]}"
+                )
                 break
 
             page_timecards = response.json()
