@@ -1200,6 +1200,16 @@ elif tool == "BSE Puller":
             eligible_df["Payment Status"].isin(selected_statuses)
         ].copy()
 
+        st.subheader("Reimbursement Payment Status Check")
+
+        st.dataframe(
+            eligible_df["Payment Status"]
+            .value_counts()
+            .rename_axis("Payment Status")
+            .reset_index(name="Count"),
+            use_container_width=True,
+        )
+
         st.success(f"Showing {len(filtered_df)} reimbursement(s).")
 
         st.dataframe(
