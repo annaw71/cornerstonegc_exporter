@@ -1171,23 +1171,10 @@ elif tool == "BSE Puller":
             reimbursement_df["Payment Status"].notna()
         ].copy()
 
-        excluded_count = len(reimbursement_df) - len(eligible_df)
-
-        st.caption(
-            f"{excluded_count} reimbursement(s) excluded " "because of payment status."
-        )
-
-        selected_statuses = st.multiselect(
-            "Reimbursement Payment Status",
-            options=[
-                "Payment Pending",
-                "Paid",
-            ],
-            default=[
-                "Payment Pending",
-                "Paid",
-            ],
-        )
+        selected_statuses = [
+            "Payment Pending",
+            "Paid",
+        ]
 
         filtered_df = eligible_df[
             eligible_df["Payment Status"].isin(selected_statuses)
@@ -1258,309 +1245,307 @@ elif tool == "BSE Puller":
                     hide_index=True,
                 )
 
-        # ====================================================
-        # SAGE REIMBURSEMENT PREVIEW
-        # ====================================================
+        # Only show Sage import when new reimbursements
+        # exist or a batch has already been prepared.
 
-        st.subheader("Sage Reimbursement Import")
+        show_sage_import = (
+            not filtered_df.empty
+            or st.session_state.get("bse_reimbursement_batch") is not None
+        )
 
-        # ====================================================
-        # PREPARE REIMBURSEMENT BATCH
-        # ====================================================
+        if show_sage_import:
 
-        if "bse_reimbursement_batch" not in st.session_state:
-            st.session_state["bse_reimbursement_batch"] = None
+            st.subheader("Sage Reimbursement Import")
 
-        if st.session_state["bse_reimbursement_batch"] is None:
+            # ====================================================
+            # PREPARE REIMBURSEMENT BATCH
+            # ====================================================
 
-            if st.button(
-                "Prepare Reimbursements for Sage",
-                disabled=filtered_df.empty,
-                key="bse_prepare_reimbursements",
-            ):
+            if "bse_reimbursement_batch" not in st.session_state:
+                st.session_state["bse_reimbursement_batch"] = None
 
-                st.session_state["bse_reimbursement_batch"] = filtered_df.copy(
-                    deep=True
+            if st.session_state["bse_reimbursement_batch"] is None:
+
+                if st.button(
+                    "Prepare Reimbursements for Sage",
+                    disabled=filtered_df.empty,
+                    key="bse_prepare_reimbursements",
+                ):
+
+                    st.session_state["bse_reimbursement_batch"] = filtered_df.copy(
+                        deep=True
+                    )
+
+                    st.rerun()
+
+            else:
+
+                st.info(
+                    "A reimbursement batch is prepared for Sage. "
+                    "Changing the payment status filter will not "
+                    "change this prepared batch."
                 )
 
-                st.rerun()
+                if st.button(
+                    "Discard Prepared Batch",
+                    key="bse_discard_batch",
+                ):
 
-        else:
+                    st.session_state["bse_reimbursement_batch"] = None
+                    st.rerun()
 
-            st.info(
-                "A reimbursement batch is prepared for Sage. "
-                "Changing the payment status filter will not "
-                "change this prepared batch."
+            prepared_batch = st.session_state["bse_reimbursement_batch"]
+
+            if prepared_batch is not None:
+                sage_source_df = prepared_batch.copy()
+            else:
+                sage_source_df = filtered_df.iloc[0:0].copy()
+
+            sage_reimbursement_df = format_sage_reimbursements(sage_source_df)
+
+            if not sage_reimbursement_df.empty:
+
+                st.dataframe(
+                    sage_reimbursement_df,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+            # Check required Sage fields
+            missing_accounts = (
+                sage_reimbursement_df["Account"]
+                .fillna("")
+                .astype(str)
+                .str.strip()
+                .eq("")
+                .sum()
             )
 
-            if st.button(
-                "Discard Prepared Batch",
-                key="bse_discard_batch",
-            ):
-
-                st.session_state["bse_reimbursement_batch"] = None
-                st.rerun()
-
-        prepared_batch = st.session_state["bse_reimbursement_batch"]
-
-        if prepared_batch is not None:
-            sage_source_df = prepared_batch.copy()
-        else:
-            sage_source_df = filtered_df.iloc[0:0].copy()
-
-        sage_reimbursement_df = format_sage_reimbursements(sage_source_df)
-
-        if not sage_reimbursement_df.empty:
-
-            st.dataframe(
-                sage_reimbursement_df,
-                use_container_width=True,
-                hide_index=True,
+            missing_payees = (
+                sage_reimbursement_df["Payee"]
+                .fillna("")
+                .astype(str)
+                .str.strip()
+                .eq("")
+                .sum()
             )
 
-        # Check required Sage fields
-        missing_accounts = (
-            sage_reimbursement_df["Account"]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-            .eq("")
-            .sum()
-        )
+            if missing_accounts > 0:
+                st.warning(
+                    f"{missing_accounts} reimbursement(s) " "are missing GL accounts."
+                )
 
-        missing_payees = (
-            sage_reimbursement_df["Payee"]
-            .fillna("")
-            .astype(str)
-            .str.strip()
-            .eq("")
-            .sum()
-        )
+            if missing_payees > 0:
+                st.warning(f"{missing_payees} reimbursement(s) " "are missing payees.")
 
-        if missing_accounts > 0:
-            st.warning(
-                f"{missing_accounts} reimbursement(s) " "are missing GL accounts."
-            )
-
-        if missing_payees > 0:
-            st.warning(f"{missing_payees} reimbursement(s) " "are missing payees.")
-
-        total = (
-            pd.to_numeric(
-                filtered_df["Amount"],
-                errors="coerce",
-            )
-            .fillna(0)
-            .sum()
-        )
-
-        st.metric(
-            "Total Reimbursements",
-            f"${total:,.2f}",
-        )
-
-        # ====================================================
-        # COPY REIMBURSEMENTS TO SAGE
-        # ====================================================
-
-        if sage_reimbursement_df.empty:
-
-            st.info("No new reimbursements available to copy.")
-
-        elif missing_accounts > 0 or missing_payees > 0:
-
-            st.error(
-                "Some reimbursements have missing GL "
-                "accounts or payees. Resolve these "
-                "before copying into Sage."
-            )
-
-        else:
-
-            sage_clipboard_text = sage_reimbursement_df.to_csv(
-                sep="\t",
-                index=False,
-                header=False,
-            )
-
-            sage_copy_json = json.dumps(sage_clipboard_text).replace("<", "\\u003c")
-
-            row_count = len(sage_reimbursement_df)
-
-            st.html(
-                f"""
-                <button
-                    id="copy-reimbursement-sage-button"
-                    style="
-                        padding: 0.5rem 0.9rem;
-                        font-size: 1rem;
-                        cursor: pointer;
-                        border-radius: 0.5rem;
-                        border: 1px solid #ccc;
-                    "
-                >
-                    Copy Reimbursements for Sage
-                </button>
-
-                <span
-                    id="copy-reimbursement-status"
-                    style="margin-left: 10px;"
-                ></span>
-
-                <script>
-                    const button = document.getElementById(
-                        "copy-reimbursement-sage-button"
-                    );
-
-                    const status = document.getElementById(
-                        "copy-reimbursement-status"
-                    );
-
-                    const text = {sage_copy_json};
-
-                    button.addEventListener(
-                        "click",
-                        async () => {{
-
-                            try {{
-
-                                await navigator.clipboard.writeText(
-                                    text
-                                );
-
-                                button.innerText =
-                                    "Copied {row_count} rows";
-
-                                status.innerText = "";
-
-                            }} catch (error) {{
-
-                                console.error(error);
-
-                                status.innerText =
-                                    "Clipboard access blocked.";
-                            }}
-                        }}
-                    );
-                </script>
-                """,
-                unsafe_allow_javascript=True,
-            )
-
-            st.markdown("""
-            ### Enter Reimbursements into Sage
-
-            1. Click **Copy Reimbursements for Sage**.
-            2. Open **Sage 4-7-7**.
-            3. Select Card Issuer Account
-               **21011 - BSE Reimbursements**.
-            4. Paste into the first transaction cell.
-            5. Verify the total, GL accounts, jobs,
-               and cost codes.
-            6. Save the transactions in Sage.
-            """)
-
-            # ====================================================
-            # CONFIRM SAVED IN SAGE
-            # ====================================================
-
-            st.divider()
-            st.subheader("Confirm Sage Sync")
-
-            st.warning(
-                "Only confirm after ALL transactions in this "
-                "prepared batch have been successfully saved "
-                "in Sage 4-7-7."
-            )
-
-            st.write(f"Reimbursements in batch: {len(sage_source_df):,}")
-
-            batch_total = (
-                sage_reimbursement_df["Charge Amount"].fillna(0).sum()
-                - sage_reimbursement_df["Credit Amount"].fillna(0).sum()
+            total = (
+                pd.to_numeric(filtered_df["Amount"], errors="coerce").fillna(0).sum()
             )
 
             st.metric(
-                "Batch Total",
-                f"${batch_total:,.2f}",
+                "Total Reimbursements",
+                f"${total:,.2f}",
             )
 
-            with st.form("confirm_bse_reimbursement_form"):
+            # ====================================================
+            # COPY REIMBURSEMENTS TO SAGE
+            # ====================================================
 
-                sage_saved = st.checkbox(
-                    "I have verified that every reimbursement "
-                    "in this batch was successfully saved in Sage."
+            if sage_reimbursement_df.empty:
+
+                st.info("No new reimbursements available to copy.")
+
+            elif missing_accounts > 0 or missing_payees > 0:
+
+                st.error(
+                    "Some reimbursements have missing GL "
+                    "accounts or payees. Resolve these "
+                    "before copying into Sage."
                 )
 
-                confirmation_text = st.text_input('Type "SAVED" to confirm')
+            else:
 
-                confirm_clicked = st.form_submit_button(
-                    "Confirm Saved in Sage",
-                    type="primary",
+                sage_clipboard_text = sage_reimbursement_df.to_csv(
+                    sep="\t",
+                    index=False,
+                    header=False,
                 )
 
-            if confirm_clicked:
+                sage_copy_json = json.dumps(sage_clipboard_text).replace("<", "\\u003c")
 
-                if not sage_saved or confirmation_text.strip() != "SAVED":
+                row_count = len(sage_reimbursement_df)
 
-                    st.error(
-                        "Please verify the Sage save and "
-                        "type SAVED before confirming."
+                st.html(
+                    f"""
+                    <button
+                        id="copy-reimbursement-sage-button"
+                        style="
+                            padding: 0.5rem 0.9rem;
+                            font-size: 1rem;
+                            cursor: pointer;
+                            border-radius: 0.5rem;
+                            border: 1px solid #ccc;
+                        "
+                    >
+                        Copy Reimbursements for Sage
+                    </button>
+
+                    <span
+                        id="copy-reimbursement-status"
+                        style="margin-left: 10px;"
+                    ></span>
+
+                    <script>
+                        const button = document.getElementById(
+                            "copy-reimbursement-sage-button"
+                        );
+
+                        const status = document.getElementById(
+                            "copy-reimbursement-status"
+                        );
+
+                        const text = {sage_copy_json};
+
+                        button.addEventListener(
+                            "click",
+                            async () => {{
+
+                                try {{
+
+                                    await navigator.clipboard.writeText(
+                                        text
+                                    );
+
+                                    button.innerText =
+                                        "Copied {row_count} rows";
+
+                                    status.innerText = "";
+
+                                }} catch (error) {{
+
+                                    console.error(error);
+
+                                    status.innerText =
+                                        "Clipboard access blocked.";
+                                }}
+                            }}
+                        );
+                    </script>
+                    """,
+                    unsafe_allow_javascript=True,
+                )
+
+                st.markdown("""
+                ### Enter Reimbursements into Sage
+
+                1. Click **Copy Reimbursements for Sage**.
+                2. Open **Sage 4-7-7**.
+                3. Select Card Issuer Account
+                    **21011 - BSE Reimbursements**.
+                4. Paste into the first transaction cell.
+                5. Verify the total, GL accounts, jobs,
+                    and cost codes.
+                6. Save the transactions in Sage.
+                """)
+
+                # ====================================================
+                # CONFIRM SAVED IN SAGE
+                # ====================================================
+
+                st.divider()
+                st.subheader("Confirm Sage Sync")
+
+                st.warning(
+                    "Only confirm after ALL transactions in this "
+                    "prepared batch have been successfully saved "
+                    "in Sage 4-7-7."
+                )
+
+                st.write(f"Reimbursements in batch: {len(sage_source_df):,}")
+
+                batch_total = (
+                    sage_reimbursement_df["Charge Amount"].fillna(0).sum()
+                    - sage_reimbursement_df["Credit Amount"].fillna(0).sum()
+                )
+
+                st.metric(
+                    "Batch Total",
+                    f"${batch_total:,.2f}",
+                )
+
+                with st.form("confirm_bse_reimbursement_form"):
+
+                    sage_saved = st.checkbox(
+                        "I have verified that every reimbursement "
+                        "in this batch was successfully saved in Sage."
                     )
 
-                else:
+                    confirmation_text = st.text_input('Type "SAVED" to confirm')
 
-                    try:
+                    confirm_clicked = st.form_submit_button(
+                        "Confirm Saved in Sage",
+                        type="primary",
+                    )
 
-                        confirmed_count = confirm_bse_reimbursement_sync(sage_source_df)
+                if confirm_clicked:
 
-                    except Exception as e:
+                    if not sage_saved or confirmation_text.strip() != "SAVED":
 
                         st.error(
-                            f"Could not verify or update " f"the sync history: {e}"
-                        )
-
-                        st.warning(
-                            "If these transactions were saved in Sage, "
-                            "do not paste them again. Check SharePoint "
-                            "history before retrying confirmation."
+                            "Please verify the Sage save and "
+                            "type SAVED before confirming."
                         )
 
                     else:
 
-                        st.session_state["bse_last_confirmed_count"] = confirmed_count
+                        try:
 
-                        st.session_state["bse_reimbursement_batch"] = None
+                            confirmed_count = confirm_bse_reimbursement_sync(
+                                sage_source_df
+                            )
 
-                        st.session_state.pop(
-                            "bill_reimbursement_df",
-                            None,
-                        )
+                        except Exception as e:
 
-                        st.rerun()
+                            st.error(
+                                f"Could not verify or update " f"the sync history: {e}"
+                            )
 
-        csv = filtered_df.to_csv(index=False).encode("utf-8-sig")
+                            st.warning(
+                                "If these transactions were saved in Sage, "
+                                "do not paste them again. Check SharePoint "
+                                "history before retrying confirmation."
+                            )
 
-        st.download_button(
-            label="Download Reimbursements CSV",
-            data=csv,
-            file_name="BSE_Reimbursements.csv",
-            mime="text/csv",
-        )
+                        else:
 
-        if st.button(
-            "Save Reimbursements to SharePoint",
-            key="bse_reimbursement_sharepoint",
-        ):
+                            st.session_state["bse_last_confirmed_count"] = (
+                                confirmed_count
+                            )
 
-            try:
-                upload_csv_to_sharepoint(
-                    csv_data=csv,
-                    filename=("BSE_Reimbursements_" f"{date.today():%Y-%m-%d}.csv"),
-                    folder_path=("Reports/Weekly PM Report/BSE"),
-                )
+                            st.session_state["bse_reimbursement_batch"] = None
 
-                st.success("Reimbursement report uploaded " "to SharePoint.")
+                            st.session_state.pop(
+                                "bill_reimbursement_df",
+                                None,
+                            )
 
-            except Exception as e:
-                st.error(f"SharePoint upload failed: {e}")
+                            st.rerun()
+
+            csv = filtered_df.to_csv(index=False).encode("utf-8-sig")
+
+            if st.button(
+                "Save Reimbursements to SharePoint",
+                key="bse_reimbursement_sharepoint",
+            ):
+
+                try:
+                    upload_csv_to_sharepoint(
+                        csv_data=csv,
+                        filename=("BSE_Reimbursements_" f"{date.today():%Y-%m-%d}.csv"),
+                        folder_path=("Reports/Weekly PM Report/BSE"),
+                    )
+
+                    st.success("Reimbursement report uploaded " "to SharePoint.")
+
+                except Exception as e:
+                    st.error(f"SharePoint upload failed: {e}")
