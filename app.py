@@ -41,7 +41,11 @@ from bill_formatter import (
     format_sage_reimbursements,
 )
 
-from sharepoint import upload_csv_to_sharepoint, get_bse_reimbursement_sync_history
+from sharepoint import (
+    upload_csv_to_sharepoint,
+    get_bse_reimbursement_sync_history,
+    confirm_bse_reimbursement_sync,
+)
 
 # SELECTOR
 
@@ -1088,6 +1092,17 @@ elif tool == "BSE Puller":
     st.divider()
     st.header("BILL Reimbursements")
 
+    confirmed_count = st.session_state.pop(
+        "bse_last_confirmed_count",
+        None,
+    )
+
+    if confirmed_count is not None:
+        st.success(
+            f"Successfully recorded {confirmed_count:,} "
+            "reimbursement(s) in SharePoint sync history."
+        )
+
     # ====================================================
     # TEST REIMBURSEMENT SYNC HISTORY
     # ====================================================
@@ -1252,7 +1267,51 @@ elif tool == "BSE Puller":
 
         st.subheader("Sage Reimbursement Import")
 
-        sage_reimbursement_df = format_sage_reimbursements(filtered_df)
+        # ====================================================
+        # PREPARE REIMBURSEMENT BATCH
+        # ====================================================
+
+        if "bse_reimbursement_batch" not in st.session_state:
+            st.session_state["bse_reimbursement_batch"] = None
+
+        if st.session_state["bse_reimbursement_batch"] is None:
+
+            if st.button(
+                "Prepare Reimbursements for Sage",
+                disabled=filtered_df.empty,
+                key="bse_prepare_reimbursements",
+            ):
+
+                st.session_state["bse_reimbursement_batch"] = filtered_df.copy(
+                    deep=True
+                )
+
+                st.rerun()
+
+        else:
+
+            st.info(
+                "A reimbursement batch is prepared for Sage. "
+                "Changing the payment status filter will not "
+                "change this prepared batch."
+            )
+
+            if st.button(
+                "Discard Prepared Batch",
+                key="bse_discard_batch",
+            ):
+
+                st.session_state["bse_reimbursement_batch"] = None
+                st.rerun()
+
+        prepared_batch = st.session_state["bse_reimbursement_batch"]
+
+        if prepared_batch is not None:
+            sage_source_df = prepared_batch.copy()
+        else:
+            sage_source_df = filtered_df.iloc[0:0].copy()
+
+        sage_reimbursement_df = format_sage_reimbursements(sage_source_df)
 
         st.dataframe(
             sage_reimbursement_df,
@@ -1397,6 +1456,85 @@ elif tool == "BSE Puller":
                and cost codes.
             6. Save the transactions in Sage.
             """)
+
+            # ====================================================
+            # CONFIRM SAVED IN SAGE
+            # ====================================================
+
+            st.divider()
+            st.subheader("Confirm Sage Sync")
+
+            st.warning(
+                "Only confirm after ALL transactions in this "
+                "prepared batch have been successfully saved "
+                "in Sage 4-7-7."
+            )
+
+            st.write(f"Reimbursements in batch: {len(sage_source_df):,}")
+
+            batch_total = (
+                sage_reimbursement_df["Charge Amount"].fillna(0).sum()
+                - sage_reimbursement_df["Credit Amount"].fillna(0).sum()
+            )
+
+            st.metric(
+                "Batch Total",
+                f"${batch_total:,.2f}",
+            )
+
+            with st.form("confirm_bse_reimbursement_form"):
+
+                sage_saved = st.checkbox(
+                    "I have verified that every reimbursement "
+                    "in this batch was successfully saved in Sage."
+                )
+
+                confirmation_text = st.text_input('Type "SAVED" to confirm')
+
+                confirm_clicked = st.form_submit_button(
+                    "Confirm Saved in Sage",
+                    type="primary",
+                )
+
+            if confirm_clicked:
+
+                if not sage_saved or confirmation_text.strip() != "SAVED":
+
+                    st.error(
+                        "Please verify the Sage save and "
+                        "type SAVED before confirming."
+                    )
+
+                else:
+
+                    try:
+
+                        confirmed_count = confirm_bse_reimbursement_sync(sage_source_df)
+
+                    except Exception as e:
+
+                        st.error(
+                            f"Could not verify or update " f"the sync history: {e}"
+                        )
+
+                        st.warning(
+                            "If these transactions were saved in Sage, "
+                            "do not paste them again. Check SharePoint "
+                            "history before retrying confirmation."
+                        )
+
+                    else:
+
+                        st.session_state["bse_last_confirmed_count"] = confirmed_count
+
+                        st.session_state["bse_reimbursement_batch"] = None
+
+                        st.session_state.pop(
+                            "bill_reimbursement_df",
+                            None,
+                        )
+
+                        st.rerun()
 
         csv = filtered_df.to_csv(index=False).encode("utf-8-sig")
 
