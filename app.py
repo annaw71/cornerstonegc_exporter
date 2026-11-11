@@ -1155,14 +1155,27 @@ elif tool == "BSE Puller":
             use_container_width=True,
         )
 
-        # Only include reimbursements eligible for Sage
-        eligible_statuses = {
-            "PAYMENT_PENDING",
-            "PAID",
+        # Match API statuses to BSE display statuses
+        status_mapping = {
+            "APPROVED": "Payment Pending",
+            "PAYMENT_PENDING": "Payment Pending",
+            "PAID": "Paid",
         }
 
+        reimbursement_df = reimbursement_df.copy()
+
+        reimbursement_df["Payment Status"] = (
+            reimbursement_df["Status"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .map(status_mapping)
+        )
+
+        # Keep only Payment Pending and Paid
         eligible_df = reimbursement_df[
-            reimbursement_df["Status"].fillna("").str.upper().isin(eligible_statuses)
+            reimbursement_df["Payment Status"].notna()
         ].copy()
 
         excluded_count = len(reimbursement_df) - len(eligible_df)
@@ -1174,17 +1187,17 @@ elif tool == "BSE Puller":
         selected_statuses = st.multiselect(
             "Reimbursement Payment Status",
             options=[
-                "PAYMENT_PENDING",
-                "PAID",
+                "Payment Pending",
+                "Paid",
             ],
             default=[
-                "PAYMENT_PENDING",
-                "PAID",
+                "Payment Pending",
+                "Paid",
             ],
         )
 
         filtered_df = eligible_df[
-            eligible_df["Status"].fillna("").str.upper().isin(selected_statuses)
+            eligible_df["Payment Status"].isin(selected_statuses)
         ].copy()
 
         st.success(f"Showing {len(filtered_df)} reimbursement(s).")
