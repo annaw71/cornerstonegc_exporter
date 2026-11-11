@@ -30,7 +30,11 @@ from ramp_auth import get_ramp_access_token, get_accounting_connection
 from ramp import get_ready_transactions, mark_transactions_exported
 from ramp_formatter import format_ramp_transactions
 
-from bill_api import get_transactions, get_reimbursements
+from bill_api import (
+    get_transactions,
+    get_reimbursements,
+    get_reimbursement_reference_data,
+)
 from bill_formatter import format_bill_transactions, format_bill_reimbursements
 
 from sharepoint import upload_csv_to_sharepoint
@@ -1088,6 +1092,14 @@ elif tool == "BSE Puller":
             with st.spinner("Pulling BILL reimbursements..."):
 
                 reimbursements = get_reimbursements()
+
+                reference_data = get_reimbursement_reference_data()
+
+                st.session_state["bill_reimbursement_reference_data"] = reference_data
+
+                st.write("BILL users retrieved:", len(reference_data["users"]))
+
+                st.write("BILL budgets retrieved:", len(reference_data["budgets"]))
 
                 if not reimbursements:
 

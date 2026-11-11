@@ -624,3 +624,59 @@ def get_reimbursements():
         )
 
     return reimbursements
+
+
+def get_bill_reference_items(resource):
+    """
+    Retrieve all BILL users or budgets,
+    including paginated results.
+    """
+
+    if resource not in ("users", "budgets"):
+        raise ValueError("Invalid BILL resource")
+
+    base = f"{BASE_URL}{TRANSACTIONS_PATH}".rsplit("/", 1)[0]
+    url = f"{base}/{resource}"
+
+    items = []
+    next_page = None
+    seen_pages = set()
+
+    for page_number in range(1, MAX_PAGES + 1):
+
+        params = {
+            "max": min(PAGE_SIZE, 100),
+        }
+
+        if next_page:
+            params["nextPage"] = next_page
+
+        response = request_with_retries(
+            url,
+            params=params,
+        )
+
+        data = response.json()
+
+        page_items = extract_items(data)
+        items.extend(page_items)
+
+        next_page = get_next_page_token(data)
+
+        if not next_page:
+            return items
+
+        if next_page in seen_pages:
+            raise RuntimeError(f"BILL repeated a {resource} pagination token.")
+
+        seen_pages.add(next_page)
+
+    raise RuntimeError(f"BILL {resource} reached the page safety limit.")
+
+
+def get_reimbursement_reference_data():
+
+    return {
+        "users": get_bill_reference_items("users"),
+        "budgets": get_bill_reference_items("budgets"),
+    }
