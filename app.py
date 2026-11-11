@@ -1227,14 +1227,22 @@ elif tool == "BSE Puller":
 
         already_synced = total_eligible - len(filtered_df)
 
-        # Display results
-        st.write(f"Previously synced reimbursements excluded: " f"{already_synced:,}")
+        # ====================================================
+        # REIMBURSEMENT SUMMARY
+        # ====================================================
 
-        st.write(f"New reimbursements ready for review: " f"{len(filtered_df):,}")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Previously Synced", f"{already_synced:,}")
+
+        with col2:
+            st.metric("Ready for Sage", f"{len(filtered_df):,}")
 
         if filtered_df.empty:
-            st.info("No new reimbursements need to be " "entered into Sage.")
-        # -------------------------------------------------------
+            st.success(
+                "All caught up! No new reimbursements " "need to be imported into Sage."
+            )
 
         st.success(f"Showing {len(filtered_df)} reimbursement(s).")
 
